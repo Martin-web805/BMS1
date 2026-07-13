@@ -1,0 +1,2555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>PrinterCare Uganda - Business Management System</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; }
+        body { background: #eef1f5; height: 100vh; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+
+        .app-container { 
+            width: 100vw; height: 100vh; max-width: 1600px; max-height: 1000px; 
+            background: #f8f9fb; border-radius: 16px; box-shadow: 0 25px 80px rgba(0,0,0,0.15); 
+            display: flex; flex-direction: column; overflow: hidden; margin: 10px;
+            border: 1px solid #e2e6ec;
+        }
+
+        #loginScreen {
+            display: flex; justify-content: center; align-items: center; 
+            background: linear-gradient(135deg, #1a2634, #2c3a4a);
+            height: 100vh; width: 100vw; position: fixed; top: 0; left: 0; z-index: 9999;
+        }
+        #loginScreen.hidden { display: none; }
+        .login-box {
+            background: white; padding: 48px; border-radius: 20px; width: 420px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.4);
+        }
+        .login-box .icon { text-align: center; font-size: 52px; margin-bottom: 8px; }
+        .login-box h2 { text-align: center; color: #1a2634; font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+        .login-box .subtitle { text-align: center; color: #6b7a8a; font-size: 14px; margin-bottom: 28px; }
+        .login-box .datetime-display { text-align: center; font-size: 12px; color: #8a9aaa; margin-bottom: 20px; padding: 8px; background: #f8f9fb; border-radius: 8px; }
+        .login-box input { width: 100%; padding: 14px 18px; margin-bottom: 14px; border: 2px solid #e8ecf2; border-radius: 10px; font-size: 14px; transition: 0.3s; background: #f8f9fb; }
+        .login-box input:focus { border-color: #1a2634; outline: none; background: white; box-shadow: 0 0 0 4px rgba(26,38,52,0.08); }
+        .login-box .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s; }
+        .login-box .btn-primary { background: #1a2634; color: white; }
+        .login-box .btn-primary:hover { background: #0f1a26; transform: translateY(-2px); box-shadow: 0 8px 25px rgba(26,38,52,0.25); }
+        .login-box .btn-secondary { background: transparent; color: #1a2634; border: 2px solid #e8ecf2; margin-top: 10px; }
+        .login-box .btn-secondary:hover { background: #f8f9fb; border-color: #1a2634; }
+        .login-box .error { color: #dc3545; font-size: 13px; text-align: center; margin-top: 10px; display: none; }
+        .login-box .success-msg { color: #28a745; font-size: 13px; text-align: center; margin-top: 10px; display: none; }
+        .login-box .login-links { display: flex; justify-content: space-between; margin-top: 16px; font-size: 13px; }
+        .login-box .login-links a { color: #6b7a8a; cursor: pointer; text-decoration: none; transition: 0.2s; }
+        .login-box .login-links a:hover { color: #1a2634; }
+
+        .header {
+            background: linear-gradient(135deg, #1a2634, #2c3a4a);
+            color: white; padding: 12px 32px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+        }
+        .header-left { display: flex; align-items: center; gap: 14px; }
+        .header-left .icon { font-size: 28px; }
+        .header-left h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+        .header-left h1 small { font-size: 12px; opacity: 0.7; display: block; font-weight: 400; letter-spacing: 0; }
+        .header-center { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+        .header-center .datetime { font-size: 13px; opacity: 0.85; background: rgba(255,255,255,0.08); padding: 6px 18px; border-radius: 20px; }
+        .header-center .online-status { font-size: 12px; padding: 4px 16px; border-radius: 20px; display: flex; align-items: center; gap: 6px; }
+        .header-center .online-status.online { background: rgba(40,167,69,0.2); color: #28a745; }
+        .header-center .online-status.offline { background: rgba(220,53,69,0.2); color: #dc3545; }
+        .header-center .currency-selector { background: rgba(255,255,255,0.08); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); color: white; font-size: 12px; }
+        .header-center .currency-selector select { background: transparent; border: none; color: white; font-size: 12px; font-weight: 600; cursor: pointer; }
+        .header-center .currency-selector select option { color: #1a2634; }
+        .header-right { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .header-right .user-info { font-size: 13px; opacity: 0.9; background: rgba(255,255,255,0.08); padding: 6px 16px; border-radius: 20px; }
+        .header-right .user-info .role { font-weight: 600; color: #ffd700; }
+        .header-right .btn { padding: 8px 20px; border: none; border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer; transition: 0.3s; }
+        .header-right .btn-white { background: white; color: #1a2634; }
+        .header-right .btn-white:hover { background: #e8ecf2; transform: translateY(-1px); }
+        .header-right .btn-outline { background: transparent; color: white; border: 2px solid rgba(255,255,255,0.2); }
+        .header-right .btn-outline:hover { background: rgba(255,255,255,0.08); border-color: white; }
+
+        .tabs {
+            background: white; padding: 0 24px; border-bottom: 2px solid #e8ecf2; 
+            display: flex; gap: 0; flex-shrink: 0; overflow-x: auto;
+        }
+        .tab-btn {
+            padding: 14px 20px; border: none; background: transparent; font-weight: 600; font-size: 13px;
+            color: #6b7a8a; cursor: pointer; transition: 0.3s; white-space: nowrap; border-bottom: 3px solid transparent;
+        }
+        .tab-btn:hover { color: #1a2634; background: #f8f9fb; }
+        .tab-btn.active { color: #1a2634; border-bottom-color: #1a2634; background: #f8f9fb; }
+
+        .content {
+            flex: 1; overflow: hidden; background: #f8f9fb; padding: 20px 28px; overflow-y: auto;
+        }
+        .tab-content { display: none; animation: fadeIn 0.4s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .dashboard-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;
+        }
+        .dashboard-card {
+            background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); text-align: center;
+            border-left: 4px solid #1a2634;
+        }
+        .dashboard-card .number { font-size: 28px; font-weight: 700; color: #1a2634; }
+        .dashboard-card .label { font-size: 12px; color: #6b7a8a; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+        .dashboard-card .change { font-size: 13px; font-weight: 600; margin-top: 6px; }
+        .dashboard-card .change.positive { color: #28a745; }
+        .dashboard-card .change.negative { color: #dc3545; }
+        .dashboard-card .change.neutral { color: #ffc107; }
+        .dashboard-card.profit { border-left-color: #28a745; }
+        .dashboard-card.loss { border-left-color: #dc3545; }
+        .dashboard-card.warning { border-left-color: #ffc107; }
+
+        .table-wrapper { overflow-x: auto; border-radius: 12px; background: white; max-height: 350px; overflow-y: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 950px; }
+        thead { background: #f2f4f8; position: sticky; top: 0; z-index: 5; }
+        th { padding: 12px 14px; text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #4a5a6a; border-bottom: 2px solid #e2e6ec; }
+        td { padding: 10px 14px; border-bottom: 1px solid #eef1f5; vertical-align: middle; }
+        .editable-input { width: 100%; padding: 6px 10px; border: 1px solid transparent; border-radius: 6px; background: transparent; font-size: 13px; transition: 0.2s; }
+        .editable-input:hover { border-color: #d0d6de; background: #fafbfc; }
+        .editable-input:focus { border-color: #1a2634; background: white; outline: none; box-shadow: 0 0 0 3px rgba(26,38,52,0.06); }
+        .editable-input.qty-input { text-align: center; font-weight: 600; width: 70px; display: block; margin: 0 auto; }
+        .editable-input.price-input { font-weight: 600; width: 150px; text-align: right; }
+        .col-amount { font-weight: 700; color: #1a2634; font-size: 14px; }
+        .profit-badge { display: inline-block; padding: 2px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .profit-badge.profit { background: #d4edda; color: #155724; }
+        .profit-badge.loss { background: #f8d7da; color: #721c24; }
+        .profit-badge.break-even { background: #fff3cd; color: #856404; }
+        .delete-btn { background: none; border: none; color: #dc3545; cursor: pointer; font-size: 16px; padding: 4px 8px; border-radius: 6px; transition: 0.2s; }
+        .delete-btn:hover { background: #fde8ea; }
+
+        .btn { padding: 8px 20px; border: none; border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer; transition: 0.3s; }
+        .btn:hover { transform: translateY(-1px); }
+        .btn-success { background: #28a745; color: white; }
+        .btn-success:hover { background: #1e7e34; box-shadow: 0 4px 15px rgba(40,167,69,0.25); }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-danger:hover { background: #b02a37; box-shadow: 0 4px 15px rgba(220,53,69,0.25); }
+        .btn-primary { background: #1a2634; color: white; }
+        .btn-primary:hover { background: #0f1a26; box-shadow: 0 4px 15px rgba(26,38,52,0.25); }
+        .btn-info { background: #17a2b8; color: white; }
+        .btn-info:hover { background: #138496; box-shadow: 0 4px 15px rgba(23,162,184,0.25); }
+        .btn-warning { background: #ffc107; color: #1a2634; }
+        .btn-warning:hover { background: #e0a800; box-shadow: 0 4px 15px rgba(255,193,7,0.25); }
+        .btn-sm { padding: 5px 14px; font-size: 11px; }
+
+        .totals-section { margin-top: 16px; padding: 18px 24px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .totals-row { display: flex; justify-content: flex-end; align-items: center; gap: 30px; flex-wrap: wrap; }
+        .total-item { display: flex; align-items: baseline; gap: 8px; }
+        .total-item .label { font-weight: 500; color: #4a5a6a; font-size: 13px; }
+        .total-item .value { font-weight: 700; font-size: 18px; color: #1a2634; min-width: 120px; text-align: right; }
+        .grand-total-item .value { font-weight: 800; font-size: 22px; color: #0a1a2a; }
+        .add-row-btn { width: 100%; padding: 12px; margin-top: 12px; border: 2px dashed #d0d6de; border-radius: 10px; background: transparent; color: #4a5a6a; font-size: 13px; font-weight: 500; cursor: pointer; transition: 0.3s; }
+        .add-row-btn:hover { background: #f0f2f6; border-color: #1a2634; color: #1a2634; }
+
+        .profit-indicator {
+            display: inline-block; padding: 8px 24px; border-radius: 30px; font-size: 18px; font-weight: 700;
+        }
+        .profit-indicator.profit { background: #d4edda; color: #155724; border: 2px solid #28a745; }
+        .profit-indicator.loss { background: #f8d7da; color: #721c24; border: 2px solid #dc3545; }
+        .profit-indicator.break-even { background: #fff3cd; color: #856404; border: 2px solid #ffc107; }
+
+        .document-area { padding: 20px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); min-height: 300px; }
+        .document-controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+        .document-controls input, .document-controls select { padding: 8px 14px; border: 2px solid #e8ecf2; border-radius: 8px; font-size: 12px; background: #f8f9fb; transition: 0.3s; }
+        .document-controls input:focus, .document-controls select:focus { border-color: #1a2634; outline: none; background: white; }
+        .doc-preview { background: white; padding: 30px; border-radius: 12px; border: 1px solid #e8ecf2; min-height: 200px; font-size: 13px; line-height: 1.7; color: #1a1a1a; }
+
+        .doc-preview .doc-header { text-align: center; border-bottom: 2px solid #1a2634; padding-bottom: 14px; margin-bottom: 18px; }
+        .doc-preview .doc-header h2 { color: #1a2634; font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+        .doc-preview .doc-header .company-info { font-size: 12px; color: #6b7a8a; }
+        .doc-preview .doc-header .doc-datetime { font-size: 11px; color: #6b7a8a; margin-top: 4px; }
+        .doc-preview table { min-width: auto; font-size: 12px; width: 100%; }
+        .doc-preview table th, .doc-preview table td { padding: 6px 12px; border: 1px solid #e8ecf2; text-align: left; }
+        .doc-preview table td:last-child, .doc-preview table th:last-child { text-align: right; }
+        .doc-preview .doc-total { text-align: right; margin-top: 18px; padding-top: 14px; border-top: 2px solid #1a2634; }
+        .doc-preview .doc-footer { margin-top: 24px; padding-top: 14px; border-top: 1px solid #e8ecf2; font-size: 12px; color: #6b7a8a; text-align: center; }
+        .doc-preview .signature-area { margin-top: 24px; padding-top: 18px; border-top: 1px solid #e8ecf2; display: flex; justify-content: space-between; flex-wrap: wrap; }
+        .doc-preview .signature-area .sig-block { text-align: center; min-width: 160px; }
+        .doc-preview .signature-area .sig-line { width: 160px; border-bottom: 2px solid #1a2634; margin: 6px auto; }
+        .doc-preview .signature-area .sig-label { font-size: 11px; color: #6b7a8a; }
+        .doc-preview .doc-creator { font-size: 11px; color: #6b7a8a; text-align: right; margin-top: 10px; font-style: italic; }
+        .doc-preview .editable-doc { border: 1px dashed #c8d2de; padding: 4px 8px; border-radius: 4px; min-width: 60px; display: inline-block; background: #fafbfc; }
+        .doc-preview .editable-doc:focus { border-color: #1a2634; outline: none; background: white; }
+
+        .receipt-item-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 8px; align-items: center; padding: 8px 12px; background: #f8f9fb; border-radius: 8px; margin-bottom: 8px; border: 1px solid #eef1f5; }
+        .receipt-item-row input, .receipt-item-row select { padding: 6px 10px; border: 2px solid #e8ecf2; border-radius: 6px; font-size: 12px; background: white; }
+        .receipt-item-row input:focus, .receipt-item-row select:focus { border-color: #1a2634; outline: none; }
+
+        .financial-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 16px; }
+        .financial-card { background: white; padding: 18px; border-radius: 12px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .financial-card .number { font-size: 26px; font-weight: 700; color: #1a2634; }
+        .financial-card .label { font-size: 11px; color: #6b7a8a; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+        .financial-card .change { font-size: 12px; font-weight: 600; margin-top: 4px; }
+        .financial-card .change.positive { color: #28a745; }
+        .financial-card .change.negative { color: #dc3545; }
+
+        .cost-entry { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto; gap: 10px; align-items: center; padding: 10px 16px; background: #f8f9fb; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eef1f5; }
+        .cost-entry input { padding: 7px 12px; border: 2px solid #e8ecf2; border-radius: 6px; font-size: 12px; background: white; transition: 0.3s; }
+        .cost-entry input:focus { border-color: #1a2634; outline: none; box-shadow: 0 0 0 3px rgba(26,38,52,0.06); }
+        .cost-entry .cost-profit { font-weight: 600; text-align: right; }
+
+        .sales-entry { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 10px; align-items: center; padding: 10px 16px; background: #f8f9fb; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eef1f5; }
+        .sales-entry input { padding: 7px 12px; border: 2px solid #e8ecf2; border-radius: 6px; font-size: 12px; background: white; transition: 0.3s; }
+        .sales-entry input:focus { border-color: #1a2634; outline: none; box-shadow: 0 0 0 3px rgba(26,38,52,0.06); }
+        .sales-entry .sale-total { font-weight: 600; background: #f0f2f5; text-align: right; }
+        .sales-entry .sale-item-select { padding: 7px 12px; border: 2px solid #e8ecf2; border-radius: 6px; font-size: 12px; background: white; }
+
+        .doc-list { max-height: 400px; overflow-y: auto; }
+        .doc-list-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid #eef1f5; transition: 0.2s; }
+        .doc-list-item:hover { background: #f8f9fb; }
+        .doc-list-item .doc-info { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+        .doc-list-item .doc-info .doc-type { font-weight: 600; color: #1a2634; }
+        .doc-list-item .doc-info .doc-date { color: #6b7a8a; font-size: 12px; }
+        .doc-list-item .doc-info .doc-creator { color: #6b7a8a; font-size: 12px; background: #eef1f5; padding: 2px 12px; border-radius: 12px; }
+        .doc-list-item .doc-actions { display: flex; gap: 6px; }
+
+        .admin-panel { background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .admin-panel .user-list { margin-top: 16px; }
+        .admin-panel .user-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #eef1f5; }
+        .admin-panel .user-item .user-info { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+        .admin-panel .user-item .user-info .username { font-weight: 600; }
+        .admin-panel .user-item .user-info .user-role { font-size: 12px; padding: 2px 14px; border-radius: 12px; background: #eef1f5; color: #1a2634; }
+        .admin-panel .user-item .user-info .user-role.admin { background: #1a2634; color: white; }
+        .admin-panel .user-item .user-status { font-size: 11px; padding: 2px 12px; border-radius: 12px; }
+        .admin-panel .user-item .user-status.online { background: #d4edda; color: #155724; }
+        .admin-panel .user-item .user-status.offline { background: #f8d7da; color: #721c24; }
+        .admin-panel .add-user-form { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+        .admin-panel .add-user-form input, .admin-panel .add-user-form select { padding: 10px 16px; border: 2px solid #e8ecf2; border-radius: 8px; font-size: 13px; flex: 1; min-width: 130px; background: #f8f9fb; transition: 0.3s; }
+        .admin-panel .add-user-form input:focus, .admin-panel .add-user-form select:focus { border-color: #1a2634; outline: none; background: white; }
+        .admin-panel .change-password-area { margin-top: 18px; padding-top: 18px; border-top: 2px solid #eef1f5; }
+        .admin-panel .change-password-area .cp-form { display: flex; gap: 12px; flex-wrap: wrap; }
+        .admin-panel .change-password-area .cp-form input { padding: 10px 16px; border: 2px solid #e8ecf2; border-radius: 8px; font-size: 13px; flex: 1; min-width: 130px; background: #f8f9fb; transition: 0.3s; }
+        .admin-panel .change-password-area .cp-form input:focus { border-color: #1a2634; outline: none; background: white; }
+
+        .footer { padding: 10px 32px; background: white; border-top: 1px solid #e8ecf2; display: flex; justify-content: space-between; font-size: 11px; color: #6b7a8a; flex-shrink: 0; }
+        .footer .footer-datetime { font-size: 11px; color: #6b7a8a; }
+
+        .toast { position: fixed; bottom: 30px; right: 30px; color: white; padding: 16px 28px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); transform: translateY(100px); opacity: 0; transition: 0.4s; z-index: 9999; max-width: 450px; font-weight: 500; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: #28a745; }
+        .toast.error { background: #dc3545; }
+        .toast.info { background: #17a2b8; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9998; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; padding: 36px; border-radius: 16px; max-width: 560px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 30px 80px rgba(0,0,0,0.3); }
+        .modal-content .close-btn { float: right; background: none; border: none; font-size: 26px; cursor: pointer; color: #6b7a8a; transition: 0.2s; }
+        .modal-content .close-btn:hover { color: #1a2634; }
+        .modal-content h3 { color: #1a2634; margin-bottom: 16px; font-size: 22px; font-weight: 700; }
+        .modal-content .form-group { margin-bottom: 14px; }
+        .modal-content .form-group label { display: block; font-weight: 600; font-size: 13px; color: #1a2634; margin-bottom: 4px; }
+        .modal-content .form-group input, .modal-content .form-group textarea { width: 100%; padding: 10px 16px; border: 2px solid #e8ecf2; border-radius: 8px; font-size: 13px; background: #f8f9fb; transition: 0.3s; }
+        .modal-content .form-group input:focus, .modal-content .form-group textarea:focus { border-color: #1a2634; outline: none; background: white; }
+
+        .currency-shs { font-weight: 700; color: #1a2634; }
+
+        @media print {
+            * { color: #000 !important; background: #fff !important; border-color: #000 !important; }
+            .header, .tabs, .footer, .document-controls, .no-print { display: none !important; }
+            .content { overflow: visible !important; padding: 0; }
+            .tab-content { display: block !important; }
+            .app-container { max-height: none; height: auto; margin: 0; border-radius: 0; box-shadow: none; border: none; }
+            .doc-preview { border: none; padding: 20px; box-shadow: none; }
+            .doc-preview .doc-header { border-bottom-color: #000 !important; }
+            .doc-preview .doc-total { border-top-color: #000 !important; }
+            .doc-preview .signature-area .sig-line { border-bottom-color: #000 !important; }
+            .doc-preview table th, .doc-preview table td { border-color: #000 !important; }
+            .doc-preview .editable-doc { border: none !important; padding: 0 !important; background: transparent !important; }
+        }
+
+        @media (max-width: 768px) {
+            .app-container { max-height: none; height: 100vh; margin: 0; border-radius: 0; }
+            .header { flex-direction: column; align-items: flex-start; padding: 14px 18px; }
+            .header-center { width: 100%; margin: 8px 0; flex-wrap: wrap; }
+            .header-right { width: 100%; flex-wrap: wrap; }
+            .tabs { padding: 0 12px; flex-wrap: nowrap; overflow-x: auto; }
+            .tab-btn { padding: 10px 14px; font-size: 12px; }
+            .content { padding: 14px; }
+            .sales-entry { grid-template-columns: 1fr; }
+            .cost-entry { grid-template-columns: 1fr; }
+            .financial-grid { grid-template-columns: 1fr 1fr; }
+            .dashboard-grid { grid-template-columns: 1fr 1fr; }
+            .login-box { width: 95%; padding: 30px; }
+            .receipt-item-row { grid-template-columns: 1fr; }
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f0f2f5; }
+        ::-webkit-scrollbar-thumb { background: #c8d2de; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8b2be; }
+    </style>
+</head>
+<body>
+
+<!-- ─── LOGIN SCREEN ─── -->
+<div id="loginScreen">
+    <div class="login-box">
+        <div class="icon">🏢</div>
+        <h2 id="loginCompanyName">PrinterCare Uganda</h2>
+        <div class="subtitle">Business Management System</div>
+        <div class="datetime-display" id="loginDateTime">Loading...</div>
+        <div id="loginError" class="error">Invalid credentials. Please try again.</div>
+        <div id="loginSuccess" class="success-msg"></div>
+        <input type="text" id="loginUsername" placeholder="Username" autocomplete="off">
+        <input type="password" id="loginPassword" placeholder="Password">
+        <button class="btn btn-primary" onclick="login()">Sign In</button>
+        <div class="login-links">
+            <a onclick="showResetPassword()">Forgot Password?</a>
+            <a onclick="showChangePassword()">Change Password</a>
+        </div>
+    </div>
+</div>
+
+<!-- ─── CHANGE PASSWORD MODAL ─── -->
+<div class="modal-overlay" id="changePassModal">
+    <div class="modal-content">
+        <button class="close-btn" onclick="closeChangePassModal()">×</button>
+        <h3>Change Password</h3>
+        <p style="color:#6b7a8a; margin-bottom:16px;">Enter your username and current password to change your password.</p>
+        <div class="form-group"><label>Username</label><input type="text" id="cpUsername" placeholder="Enter your username"></div>
+        <div class="form-group"><label>Current Password</label><input type="password" id="cpCurrentPass" placeholder="Enter current password"></div>
+        <div class="form-group"><label>New Password</label><input type="password" id="cpNewPass" placeholder="Enter new password (min 4 characters)"></div>
+        <div class="form-group"><label>Confirm New Password</label><input type="password" id="cpConfirmPass" placeholder="Confirm new password"></div>
+        <button class="btn btn-primary" onclick="changePasswordLogin()" style="width:100%; padding:14px;">Update Password</button>
+        <div id="cpMessage" style="margin-top:12px; font-size:13px; text-align:center; display:none;"></div>
+    </div>
+</div>
+
+<!-- ─── RESET PASSWORD MODAL ─── -->
+<div class="modal-overlay" id="resetModal">
+    <div class="modal-content">
+        <button class="close-btn" onclick="closeResetModal()">×</button>
+        <h3>Reset Password</h3>
+        <p style="color:#6b7a8a; margin-bottom:16px;">Enter your username. A reset code will be sent to <strong id="resetEmailDisplay">printercareuganda@gmail.com</strong></p>
+        <div class="form-group"><label>Username</label><input type="text" id="resetUsername" placeholder="Enter your username"></div>
+        <div class="form-group" id="resetCodeGroup" style="display:none;"><label>Reset Code</label><input type="text" id="resetCodeInput" placeholder="Enter the 6-digit reset code sent to your email"></div>
+        <div class="form-group" id="resetNewPassGroup" style="display:none;"><label>New Password</label><input type="password" id="resetNewPassword" placeholder="Enter new password (min 4 characters)"></div>
+        <div class="form-group" id="resetConfirmPassGroup" style="display:none;"><label>Confirm New Password</label><input type="password" id="resetConfirmPassword" placeholder="Confirm new password"></div>
+        <button class="btn btn-primary" id="resetBtn" onclick="sendResetCode()" style="width:100%; padding:14px;">Send Reset Code</button>
+        <button class="btn btn-success" id="resetConfirmBtn" onclick="confirmResetCode()" style="width:100%; padding:14px; display:none; margin-top:10px;">Verify & Reset Password</button>
+        <div id="resetMessage" style="margin-top:12px; font-size:13px; text-align:center; display:none;"></div>
+    </div>
+</div>
+
+<!-- ─── EDIT COMPANY DETAILS MODAL (Admin Only) ─── -->
+<div class="modal-overlay" id="editCompanyModal">
+    <div class="modal-content">
+        <button class="close-btn" onclick="closeEditCompanyModal()">×</button>
+        <h3>🏢 Edit Company Details</h3>
+        <p style="color:#6b7a8a; margin-bottom:16px;">Update your business information that appears on all documents. <strong>Admin Only</strong></p>
+        <div class="form-group"><label>Business Name</label><input type="text" id="editCompanyName" value="PrinterCare Uganda"></div>
+        <div class="form-group"><label>Phone Number</label><input type="text" id="editCompanyPhone" value="0702747217"></div>
+        <div class="form-group"><label>Email Address</label><input type="email" id="editCompanyEmail" value="printercareuganda@gmail.com"></div>
+        <div class="form-group"><label>Physical Address</label><input type="text" id="editCompanyAddress" value="Kampala, Uganda"></div>
+        <div class="form-group"><label>Website (Optional)</label><input type="text" id="editCompanyWebsite" value=""></div>
+        <div class="form-group"><label>Default Currency</label>
+            <select id="editCompanyCurrency" style="width:100%; padding:10px 16px; border:2px solid #e8ecf2; border-radius:8px; background:#f8f9fb;">
+                <option value="UGX">Ugandan Shilling (UGX)</option>
+                <option value="KES">Kenyan Shilling (KES)</option>
+                <option value="TZS">Tanzanian Shilling (TZS)</option>
+                <option value="USD">US Dollar (USD)</option>
+                <option value="EUR">Euro (EUR)</option>
+                <option value="GBP">British Pound (GBP)</option>
+            </select>
+        </div>
+        <button class="btn btn-primary" onclick="saveCompanyDetails()" style="width:100%; padding:14px;">Save Company Details</button>
+        <div id="companyMsg" style="margin-top:12px; font-size:13px; text-align:center; display:none;"></div>
+    </div>
+</div>
+
+<!-- ─── SHARE DOCUMENT MODAL ─── -->
+<div class="modal-overlay" id="shareModal">
+    <div class="modal-content">
+        <button class="close-btn" onclick="closeShareModal()">×</button>
+        <h3>📧 Share Document</h3>
+        <p style="color:#6b7a8a; margin-bottom:16px;">Send this document to a client's email address.</p>
+        <div class="form-group">
+            <label>Client Email Address</label>
+            <input type="email" id="shareClientEmail" placeholder="client@example.com">
+        </div>
+        <div class="form-group">
+            <label>Client Name</label>
+            <input type="text" id="shareClientName" placeholder="Client Name">
+        </div>
+        <div class="form-group">
+            <label>Document</label>
+            <input type="text" id="shareDocType" readonly style="background:#eef1f5;">
+        </div>
+        <div class="form-group">
+            <label>Additional Message</label>
+            <textarea id="shareMessage" rows="3" placeholder="Add a personal message..."></textarea>
+        </div>
+        <button class="btn btn-success" onclick="sendSharedDocument()" style="width:100%; padding:14px;">Send to Client</button>
+        <div id="shareMsg" style="margin-top:12px; font-size:13px; text-align:center; display:none;"></div>
+    </div>
+</div>
+
+<!-- ─── EDIT USER MODAL ─── -->
+<div class="modal-overlay" id="editUserModal">
+    <div class="modal-content">
+        <button class="close-btn" onclick="closeEditUserModal()">×</button>
+        <h3>Edit User</h3>
+        <p style="color:#6b7a8a; margin-bottom:16px;">Update user details and permissions.</p>
+        <div class="form-group"><label>Username</label><input type="text" id="editUserUsername" readonly style="background:#eef1f5;"></div>
+        <div class="form-group"><label>Role</label>
+            <select id="editUserRole" style="width:100%; padding:10px 16px; border:2px solid #e8ecf2; border-radius:8px; background:#f8f9fb;">
+                <option value="admin">Admin</option><option value="employee">Employee</option>
+            </select>
+        </div>
+        <div class="form-group"><label>New Password (leave blank to keep current)</label><input type="password" id="editUserPassword" placeholder="Enter new password..."></div>
+        <button class="btn btn-primary" onclick="saveUserEdit()" style="width:100%; padding:14px;">Update User</button>
+        <div id="userEditMsg" style="margin-top:12px; font-size:13px; text-align:center; display:none;"></div>
+    </div>
+</div>
+
+<!-- ─── APP ─── -->
+<div class="app-container" id="appContainer" style="display:none;">
+
+    <!-- HEADER -->
+    <div class="header">
+        <div class="header-left">
+            <div class="icon">🏢</div>
+            <div><h1 id="headerCompanyName">PrinterCare Uganda <small id="headerCompanyPhone">📞 0702747217</small></h1></div>
+        </div>
+        <div class="header-center">
+            <div class="datetime" id="headerDateTime">Loading...</div>
+            <div class="online-status online" id="onlineStatus">🟢 Online</div>
+            <div class="currency-selector">
+                <label style="font-size:11px; opacity:0.7;">Currency:</label>
+                <select id="headerCurrency" onchange="updateCurrency()">
+                    <option value="UGX">UGX</option>
+                    <option value="KES">KES</option>
+                    <option value="TZS">TZS</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                </select>
+            </div>
+        </div>
+        <div class="header-right">
+            <span class="user-info">👤 <span id="currentUser">admin</span> · <span class="role" id="currentRole">Admin</span></span>
+            <button class="btn btn-white" onclick="saveData()">Save</button>
+            <button class="btn btn-outline" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="dashboard">📊 Dashboard</button>
+        <button class="tab-btn" data-tab="costs">💰 Product Costs</button>
+        <button class="tab-btn" data-tab="inventory">📦 Inventory</button>
+        <button class="tab-btn" data-tab="sales">🛒 Sales</button>
+        <button class="tab-btn" data-tab="profitloss">📈 P&L</button>
+        <button class="tab-btn" data-tab="invoice">🧾 Invoice</button>
+        <button class="tab-btn" data-tab="receipt">📄 Receipt</button>
+        <button class="tab-btn" data-tab="balance">📊 Balance</button>
+        <button class="tab-btn" data-tab="statement">📋 Statement</button>
+        <button class="tab-btn" data-tab="documents" id="documentsTab">📁 Documents</button>
+        <button class="tab-btn" data-tab="admin" id="adminTab">⚙️ Admin</button>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+        <!-- DASHBOARD -->
+        <div id="dashboard" class="tab-content active">
+            <h3 style="color:#1a2634; font-size:18px; font-weight:600; margin-bottom:14px;">📊 Business Dashboard</h3>
+            
+            <div class="dashboard-grid" id="dashboardGrid">
+                <div class="dashboard-card profit">
+                    <div class="number" id="dashTotalRevenue">0</div>
+                    <div class="label">Total Revenue</div>
+                    <div class="change positive" id="dashRevenueChange">+0%</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="number" id="dashTotalCosts">0</div>
+                    <div class="label">Total Costs (Buying Price)</div>
+                </div>
+                <div class="dashboard-card" id="dashProfitCard">
+                    <div class="number" id="dashNetProfit">0</div>
+                    <div class="label">Net Profit / (Loss)</div>
+                    <div class="change positive" id="dashProfitChange">+0%</div>
+                </div>
+                <div class="dashboard-card warning">
+                    <div class="number" id="dashStockValue">0</div>
+                    <div class="label">Total Stock Value (Selling Price)</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="number" id="dashTotalItems">0</div>
+                    <div class="label">Total Items in Stock</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="number" id="dashLowStock">0</div>
+                    <div class="label">Low Stock Items</div>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+                <h4 style="color:#1a2634; font-size:15px; font-weight:500;">📦 Current Stock Status</h4>
+                <div>
+                    <button class="btn btn-success btn-sm" onclick="autoUpdateStock()">🔄 Auto-Update Stock</button>
+                    <span style="font-size:12px; color:#6b7a8a; margin-left:10px;" id="lastUpdateTime">Last updated: Just now</span>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead><tr><th>Item</th><th>Model</th><th>In Stock</th><th>Selling Price</th><th>Buying Price</th><th>Profit per Unit</th><th>Status</th></tr></thead>
+                    <tbody id="dashboardTableBody"></tbody>
+                </table>
+            </div>
+
+            <div style="margin-top:16px; padding:16px 20px; background:white; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                    <div>
+                        <span style="font-weight:600; font-size:14px; color:#1a2634;">📈 Profit/Loss Status:</span>
+                        <span id="profitStatusIndicator" class="profit-indicator profit">✅ PROFIT</span>
+                    </div>
+                    <div style="font-size:13px; color:#6b7a8a;">
+                        <span id="profitStatusDetail">Revenue: 0 | Buying Costs: 0 | Net: 0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PRODUCT COSTS -->
+        <div id="costs" class="tab-content">
+            <h3 style="color:#1a2634; font-size:18px; font-weight:600; margin-bottom:14px;">💰 Product Buying Prices</h3>
+            <p style="color:#6b7a8a; margin-bottom:14px; font-size:13px;">Enter the buying price for each product to track profit margins. Profit = Selling Price - Buying Price</p>
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+                <h4 style="color:#1a2634; font-size:15px; font-weight:500;">Product Cost List</h4>
+                <div><button class="btn btn-success btn-sm" onclick="addCostRow()">Add Product Cost</button><button class="btn btn-danger btn-sm" onclick="clearCosts()">Clear</button></div>
+            </div>
+            <div id="costList"></div>
+            <div class="totals-section" style="margin-top:14px;">
+                <div class="totals-row">
+                    <div class="total-item"><span class="label">Total Products:</span><span class="value" id="costTotalItems">0</span></div>
+                    <div class="total-item"><span class="label">Total Cost of Products:</span><span class="value" id="costTotalValue">0</span></div>
+                    <div class="total-item"><span class="label">Total Potential Profit:</span><span class="value" id="costTotalProfit">0</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- INVENTORY -->
+        <div id="inventory" class="tab-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+                <h3 style="color:#1a2634; font-size:18px; font-weight:600;">📦 Inventory Management</h3>
+                <div>
+                    <button class="btn btn-success btn-sm" onclick="addRow()">Add</button>
+                    <button class="btn btn-danger btn-sm" onclick="clearAll()">Clear</button>
+                    <button class="btn btn-primary btn-sm" onclick="loadSampleData()">Sample</button>
+                    <button class="btn btn-info btn-sm" onclick="saveInventory()">💾 Save Inventory</button>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead><tr><th>Commodity</th><th>Model</th><th>Specifications</th><th style="text-align:center;">Q'ty</th><th style="text-align:right;">Selling Price</th><th style="text-align:right;">Buying Price</th><th style="text-align:right;">Total Value</th><th style="text-align:center;">Action</th></tr></thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+            <button class="add-row-btn" onclick="addRow()">+ Add New Row</button>
+            <div class="totals-section">
+                <div class="totals-row">
+                    <div class="total-item"><span class="label">Total Items:</span><span class="value" id="totalItemsDisplay">0</span></div>
+                    <div class="total-item"><span class="label">Total Selling Value:</span><span class="value" id="subtotalDisplay">0</span></div>
+                    <div class="total-item"><span class="label">Total Buying Cost:</span><span class="value" id="totalBuyingDisplay">0</span></div>
+                </div>
+                <div class="totals-row" style="margin-top:8px; border-top:1px solid #eef1f5; padding-top:12px;">
+                    <div class="total-item"><span class="label">Shipping Cost:</span><input type="number" id="shippingInput" value="30000" step="100" min="0" oninput="updateTotals()" style="width:120px; padding:6px 12px; border:2px solid #e8ecf2; border-radius:6px; text-align:right; background:#f8f9fb;"></div>
+                    <div class="total-item grand-total-item"><span class="label" style="font-weight:600;">Total Investment (incl. Shipping):</span><span class="value" id="grandTotalDisplay">0</span></div>
+                </div>
+            </div>
+            <div style="margin-top:12px; display:flex; justify-content:space-between; font-size:11px; color:#6b7a8a; border-top:1px solid #eef1f5; padding-top:10px;">
+                <span>Click to edit · Auto-saves</span>
+                <span id="rowCount">0 items</span>
+            </div>
+        </div>
+
+        <!-- SALES -->
+        <div id="sales" class="tab-content">
+            <h3 style="color:#1a2634; font-size:18px; font-weight:600; margin-bottom:14px;">🛒 Sales & Revenue</h3>
+            <div class="financial-grid" id="salesSummary">
+                <div class="financial-card"><div class="number" id="totalSales">0</div><div class="label">Total Sales</div></div>
+                <div class="financial-card"><div class="number" id="totalCost">0</div><div class="label">Buying Costs</div></div>
+                <div class="financial-card"><div class="number" id="grossProfit">0</div><div class="label">Gross Profit</div><div class="change positive" id="grossMargin">0%</div></div>
+                <div class="financial-card"><div class="number" id="netProfit">0</div><div class="label">Net Profit</div><div class="change positive" id="netMargin">0%</div></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+                <h4 style="color:#1a2634; font-size:15px; font-weight:500;">Sales Records</h4>
+                <div><button class="btn btn-success btn-sm" onclick="addSale()">Add Sale</button><button class="btn btn-danger btn-sm" onclick="clearSales()">Clear</button></div>
+            </div>
+            <div id="salesList"></div>
+            <div class="totals-section" style="margin-top:14px;">
+                <div class="totals-row">
+                    <div class="total-item"><span class="label">Revenue:</span><span class="value" id="salesRevenue">0</span></div>
+                    <div class="total-item"><span class="label">Buying Costs:</span><span class="value" id="salesCOGS">0</span></div>
+                    <div class="total-item grand-total-item"><span class="label" style="font-weight:600;">Net Profit:</span><span class="value" id="salesNetProfit" style="font-size:22px;">0</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PROFIT & LOSS -->
+        <div id="profitloss" class="tab-content">
+            <h3 style="color:#1a2634; font-size:18px; font-weight:600; margin-bottom:14px;">📈 Profit & Loss Statement</h3>
+            <div class="document-controls">
+                <button class="btn btn-primary btn-sm" onclick="generateProfitLoss()">Generate</button>
+                <button class="btn btn-info btn-sm" onclick="printDocument('profitloss')">Print</button>
+                <button class="btn btn-success btn-sm" onclick="shareDocument('profitloss')">📧 Share</button>
+                <button class="btn btn-warning btn-sm" onclick="saveDocument('profitloss')">Save</button>
+                <input type="month" id="profitPeriod" value="2026-07" style="padding:6px 12px; border:2px solid #e8ecf2; border-radius:6px; font-size:12px; background:#f8f9fb;">
+            </div>
+            <div class="document-area"><div class="doc-preview" id="profitlossContent"><div class="doc-header"><h2 id="plCompanyName">PRINTERCARE UGANDA</h2><div class="company-info" id="plCompanyInfo">📞 0702747217 · 📧 printercareuganda@gmail.com</div><div class="doc-datetime" id="plDateTime">Generated: 2026-07-13 14:30:00</div><h3 style="margin-top:10px; color:#1a2634;">PROFIT & LOSS STATEMENT</h3><div><strong>Period:</strong> <span id="plPeriod">2026-07-01 to 2026-07-13</span></div></div><div style="max-width:550px; margin:15px auto;"><div style="padding:8px 0;"><div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #eef1f5;"><span><strong>Revenue</strong></span><span id="plRevenue">0</span></div><div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #eef1f5; padding-left:20px;"><span>Sales Revenue</span><span id="plSales">0</span></div><div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #eef1f5; padding-left:20px;"><span>Service Revenue</span><span id="plService">0</span></div><div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:2px solid #1a2634; font-weight:700; color:#1a2634;"><span>Total Revenue</span><span id="plTotalRevenue">0</span></div><div style="padding:8px 0;"><div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #eef1f5;"><span><strong>Expenses</strong></span><span id="plExpensesLabel">0</span></div><div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #eef1f5; padding-left:20px;"><span>Cost of Goods Sold (Buying Price)</span><span id="plCOGS">0</span></div><div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #eef1f5; padding-left:20px;"><span>Operating Expenses</span><span id="plOperating">0</span></div><div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:2px solid #1a2634; font-weight:700; color:#1a2634;"><span>Total Expenses</span><span id="plTotalExpenses">0</span></div></div><div style="padding:8px 0;"><div style="display:flex; justify-content:space-between; padding:12px 20px; background:#f2f4f8; border-radius:8px; font-size:20px; font-weight:800; color:#1a2634; border:2px solid #1a2634;"><span>NET PROFIT / (LOSS)</span><span id="plNet">0</span></div></div></div></div><div class="doc-creator">Created by: <span id="plCreator">admin</span></div><div class="doc-footer"><p id="plFooter">📞 0702747217 · 📧 printercareuganda@gmail.com</p></div></div></div>
+        </div>
+
+        <!-- INVOICE -->
+        <div id="invoice" class="tab-content">
+            <h3 style="color:#1a2634; font-size:18px; font-weight:600; margin-bottom:14px;">🧾 Proforma Invoice</h3>
+            <div class="document-controls">
+                <button class="btn btn-primary btn-sm" onclick="generateInvoice()">Generate</button>
+                <button class="btn btn-warning btn-sm" onclick="saveDocument('invoice')">Save</button>
+                <button class="btn btn-info btn-sm" onclick="printDocument('invoice')">Print</button>
+                <button class="btn btn-success btn-sm" onclick="shareDocument('invoice')">📧 Share</button>
+                <input type="text" id="invoiceNumber" placeholder="INV-001" style="width:100px;">
+                <input type="text" id="clientName" placeholder="Client" style="width:140px;">
+                <input type="email" id="clientEmail" placeholder="Client Email" style="width:160px;">
+            </div>
+            <div class="document-area"><div class="doc-preview" id="invoiceContent"><div class="doc-header"><h2 id="invCompanyName">PRINTERCARE UGANDA</h2><div class="company-info" id="invCompanyInfo">📞 0702747217 · 📧 printercareuganda@gmail.com</div><div class="doc-datetime" id="invDateTime">Generated: 2026-07-13 14:30:00</div><h3 style="margin-top:10px; color:#1a2634;">PROFORMA INVOICE</h3><div style="display:flex; justify-content:space-between; flex-wrap:wrap;"><span><strong>Invoice #:</strong> <span id="docInvoiceNumber">INV-001</span></span><span><strong>Date:</strong> <span id="docDate">2026-07-13</span></span><span><strong>Client:</strong> <span id="docClient">—</span></span></div></div><table><thead><tr><th>Item</th><th>Model</th><th>Qty</th><th style="text-align:right;">Unit Price</th><th style="text-align:right;">Total</th></tr></thead><tbody id="invoiceTableBody"></tbody></table><div class="doc-total"><p><strong>Subtotal:</strong> <span id="invoiceSubtotal">0</span></p><p><strong>Shipping:</strong> <span id="invoiceShipping">0</span></p><p style="font-size:20px; color:#1a2634;"><strong>Total:</strong> <span id="invoiceTotal">0</span></p></div><div class="signature-area"><div class="sig-block"><div class="sig-line"></div><div class="sig-label">Authorized Signature</div></div><div class="sig-block"><div class="sig-line"></div><div class="sig-label">Client Signature</div></div></div><div class="doc-creator">Created by: <span id="invoiceCreator">admin</span></div><div class="doc-footer"><p id="invFooter">📞 0702747217 · 📧 printercareuganda@gmail.com</p></div></div></div>
+        </div>
+
+        <!-- RECEIPT -->
+        <div id="receipt" class="tab-content">
+            <h3 style="color:#1a2634; font-size:18px; font-weight:600; margin-bottom:14px;">📄 Official Receipt</h3>
+            <div style="background:#fff3cd; padding:10px 16px; border-radius:8px; margin-bottom:14px; font-size:13px; color:#856404; border:1px solid #ffc107;">
+                ⚠️ Receipt items are completely independent of inventory. Add or remove items freely.
+            </div>
+            <div class="document-controls">
+                <button class="btn btn-primary btn-sm" onclick="generateReceipt()">Generate</button>
+                <button class="btn btn-warning btn-sm" onclick="saveDocument('receipt')">Save</button>
+                <button class="btn btn-info btn-sm" onclick="printDocument('receipt')">Print</button>
+                <button class="btn btn-success btn-sm" onclick="shareDocument('receipt')">📧 Share</button>
+                <input type="text" id="receiptNumber" placeholder="RCT-001" style="width:100px;" value="RCT-001">
+                <input type="text" id="receiptClient" placeholder="Customer" style="width:130px;" value="Walk-in Customer">
+                <input type="email" id="receiptClientEmail" placeholder="Client Email" style="width:160px;">
+                <input type="text" id="paymentMethod" placeholder="Cash/MPesa" style="width:120px;" value="Cash">
+            </div>
+            <div style="margin-bottom:12px;">
+                <button class="btn btn-success btn-sm" onclick="addReceiptItem()">➕ Add Item</button>
+                <button class="btn btn-danger btn-sm" onclick="clearReceiptItems()">🗑️ Clear All</button>
+                <span style="font-size:12px; color:#6b7a8a; margin-left:10px;">Click any field to edit</span>
+            </div>
+            <div id="receiptItemsContainer"></div>
+            <div class="document-area">
+                <div class="doc-preview" id="receiptContent">
+                    <div class="doc-header">
+                        <h2 id="recCompanyName">PRINTERCARE UGANDA</h2>
+                        <div class="company-info" id="recCompanyInfo">📞 0702747217 · 📧 printercareuganda@gmail.com</div>
+                        <div class="company-info" id="recCompanyAddress">📍 Kampala, Uganda</div>
+                        <div class="doc-datetime" id="recDateTime">Generated: 2026-07-13 14:30:00</div>
+                        <h3 style="margin-top:10px; color:#1a2634;">OFFICIAL RECEIPT</h3>
+                        <div style="display:flex; justify-content:space-between; flex-wrap:wrap;">
+                            <span><strong>Receipt #:</strong> <span id="docReceiptNumber">RCT-001</span></span>
+                            <span><strong>Date:</strong> <span id="docReceiptDate">2026-07-13</span></span>
+                            <span><strong>Customer:</strong> <span id="docReceiptClient">Walk-in Customer</span></span>
+                        </div>
+                    </div>
+                    <table>
+                        <thead><tr><th>Item</th><th>Qty</th><th style="text-align:right;">Unit Price</th><th style="text-align:right;">Total</th></tr></thead>
+                        <tbody id="receiptTableBody"></tbody>
+                    </table>
+                    <div class="doc-total">
+                        <p><strong>Subtotal:</strong> <span id="receiptSubtotal">0</span></p>
+                        <p><strong>Payment Method:</strong> <span id="docPaymentMethod">Cash</span></p>
+                        <p style="font-size:20px; color:#1a2634;"><strong>Amount Paid:</strong> <span id="receiptTotal">0</span></p>
+                    </div>
+                    <div class="signature-area">
+                        <div class="sig-block"><div class="sig-line"></div><div class="sig-label">Authorized Signature</div></div>
+                        <div class="sig-block"><div class="sig-line"></div><div class="sig-label">Customer Signature</div></div>
+                    </div>
+                    <div class="doc-creator">Created by: <span id="receiptCreator">admin</span></div>
+                    <div class="doc-footer"><p id="recFooter">📞 0702747217 · 📧 printercareuganda@gmail.com</p></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BALANCE SHEET -->
+        <div id="balance" class="tab-content">
+            <h3 style="color:#1a2634; font-size:18px; font-weight:600; margin-bottom:14px;">📊 Balance Sheet</h3>
+            <div class="document-controls">
+                <button class="btn btn-primary btn-sm" onclick="generateBalanceSheet()">Generate</button>
+                <button class="btn btn-info btn-sm" onclick="printDocument('balance')">Print</button>
+                <button class="btn btn-success btn-sm" onclick="shareDocument('balance')">📧 Share</button>
+                <button class="btn btn-warning btn-sm" onclick="saveDocument('balance')">Save</button>
+            </div>
+            <div class="document-area"><div class="doc-preview" id="balanceContent"><div class="doc-header"><h2 id="balCompanyName">PRINTERCARE UGANDA</h2><div class="company-info" id="balCompanyInfo">📞 0702747217 · 📧 printercareuganda@gmail.com</div><div class="doc-datetime" id="balDateTime">Generated: 2026-07-13 14:30:00</div><h3 style="margin-top:10px; color:#1a2634;">BALANCE SHEET</h3><div><strong>As of:</strong> <span id="balanceDate">2026-07-13</span></div></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin:18px 0;"><div><h4 style="color:#1a2634; border-bottom:2px solid #1a2634; padding-bottom:6px;">ASSETS</h4><div style="padding:8px 0;"><div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #eef1f5;"><span>Inventory Value (Selling)</span><span id="balanceInventory">0</span></div><div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #eef1f5;"><span>Cash on Hand</span><span id="balanceCash">0</span></div><div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #eef1f5;"><span>Accounts Receivable</span><span id="balanceReceivable">0</span></div><div style="display:flex; justify-content:space-between; padding:6px 0; font-weight:700; color:#1a2634; border-top:2px solid #1a2634; margin-top:6px; padding-top:6px;"><span>Total Assets</span><span id="balanceTotalAssets">0</span></div></div></div><div><h4 style="color:#1a2634; border-bottom:2px solid #1a2634; padding-bottom:6px;">LIABILITIES & EQUITY</h4><div style="padding:8px 0;"><div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #eef1f5;"><span>Accounts Payable</span><span id="balancePayable">0</span></div><div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #eef1f5;"><span>Owner's Equity</span><span id="balanceEquity">0</span></div><div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #eef1f5;"><span>Retained Earnings</span><span id="balanceRetained">0</span></div><div style="display:flex; justify-content:space-between; padding:6px 0; font-weight:700; color:#1a2634; border-top:2px solid #1a2634; margin-top:6px; padding-top:6px;"><span>Total Liabilities & Equity</span><span id="balanceTotalLiabilities">0</span></div></div></div></div><div class="signature-area"><div class="sig-block"><div class="sig-line"></div><div class="sig-label">Prepared By</div></div><div class="sig-block"><div class="sig-line"></div><div class="sig-label">Approved By</div></div></div><div class="doc-creator">Created by: <span id="balanceCreator">admin</span></div><div class="doc-footer"><p id="balFooter">📞 0702747217 · 📧 printercareuganda@gmail.com</p></div></div></div>
+        </div>
+
+        <!-- STATEMENT -->
+        <div id="statement" class="tab-content">
+            <h3 style="color:#1a2634; font-size:18px; font-weight:600; margin-bottom:14px;">📋 Statement of Account</h3>
+            <div class="document-controls">
+                <button class="btn btn-primary btn-sm" onclick="generateStatement()">Generate</button>
+                <button class="btn btn-info btn-sm" onclick="printDocument('statement')">Print</button>
+                <button class="btn btn-success btn-sm" onclick="shareDocument('statement')">📧 Share</button>
+                <button class="btn btn-warning btn-sm" onclick="saveDocument('statement')">Save</button>
+                <input type="text" id="statementClient" placeholder="Client Name" style="width:160px;">
+                <input type="email" id="statementClientEmail" placeholder="Client Email" style="width:160px;">
+            </div>
+            <div class="document-area"><div class="doc-preview" id="statementContent"><div class="doc-header"><h2 id="staCompanyName">PRINTERCARE UGANDA</h2><div class="company-info" id="staCompanyInfo">📞 0702747217 · 📧 printercareuganda@gmail.com</div><div class="doc-datetime" id="staDateTime">Generated: 2026-07-13 14:30:00</div><h3 style="margin-top:10px; color:#1a2634;">STATEMENT OF ACCOUNT</h3><div><strong>Client:</strong> <span id="docStatementClient">—</span> <span style="margin-left:16px;"><strong>Period:</strong> <span id="statementPeriod">2026-07-01 to 2026-07-13</span></span></div></div><table><thead><tr><th>Date</th><th>Invoice #</th><th>Description</th><th style="text-align:right;">Debit</th><th style="text-align:right;">Credit</th><th style="text-align:right;">Balance</th></tr></thead><tbody id="statementTableBody"></tbody></table><div class="doc-total"><p><strong>Opening Balance:</strong> <span id="statementOpening">0</span></p><p><strong>Total Debits:</strong> <span id="statementDebits">0</span></p><p><strong>Total Credits:</strong> <span id="statementCredits">0</span></p><p style="font-size:20px; color:#1a2634;"><strong>Closing Balance:</strong> <span id="statementClosing">0</span></p></div><div class="signature-area"><div class="sig-block"><div class="sig-line"></div><div class="sig-label">Authorized Signature</div></div></div><div class="doc-creator">Created by: <span id="statementCreator">admin</span></div><div class="doc-footer"><p id="staFooter">📞 0702747217 · 📧 printercareuganda@gmail.com</p></div></div></div>
+        </div>
+
+        <!-- DOCUMENTS -->
+        <div id="documents" class="tab-content">
+            <h3 style="color:#1a2634; font-size:18px; font-weight:600; margin-bottom:14px;">📁 Saved Documents <span style="font-size:13px; color:#6b7a8a; font-weight:400;">(Admin Only)</span></h3>
+            <div class="document-controls">
+                <button class="btn btn-primary btn-sm" onclick="refreshDocList()">Refresh</button>
+                <button class="btn btn-danger btn-sm" onclick="clearAllDocs()">Clear All</button>
+                <span style="font-size:12px; color:#6b7a8a;" id="docCount">0 documents</span>
+            </div>
+            <div class="document-area"><div class="doc-list" id="docList"><div style="text-align:center; padding:40px; color:#6b7a8a;">No documents saved yet.</div></div></div>
+        </div>
+
+        <!-- ADMIN -->
+        <div id="admin" class="tab-content">
+            <h3 style="color:#1a2634; font-size:18px; font-weight:600; margin-bottom:14px;">⚙️ Admin Panel</h3>
+            <div class="admin-panel">
+                <div style="margin-bottom:20px; padding-bottom:20px; border-bottom:2px solid #eef1f5;">
+                    <h4 style="color:#1a2634; margin-bottom:12px;">🏢 Company Settings <span style="font-size:11px; color:#dc3545; font-weight:400;">(Admin Only)</span></h4>
+                    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                        <button class="btn btn-primary btn-sm" onclick="openEditCompany()">Edit Company Details</button>
+                        <span style="font-size:12px; color:#6b7a8a; align-self:center;">Update business name, phone, email, address, currency</span>
+                    </div>
+                    <div style="margin-top:10px; font-size:12px; color:#6b7a8a; background:#f8f9fb; padding:8px 14px; border-radius:6px;">
+                        <strong>Current Details:</strong> 
+                        <span id="adminCompanyPreview">PrinterCare Uganda | 📞 0702747217 | 📧 printercareuganda@gmail.com | 📍 Kampala, Uganda | 💰 UGX</span>
+                    </div>
+                </div>
+                <h4 style="color:#1a2634; margin-bottom:12px;">👥 User Management</h4>
+                <div class="add-user-form">
+                    <input type="text" id="newUsername" placeholder="Username">
+                    <input type="password" id="newPassword" placeholder="Password">
+                    <select id="newRole"><option value="employee">Employee</option><option value="admin">Admin</option></select>
+                    <button class="btn btn-success btn-sm" onclick="addUser()">Add User</button>
+                </div>
+                <div class="user-list" id="userList"></div>
+                <div class="change-password-area">
+                    <h4 style="color:#1a2634; margin-bottom:12px;">🔑 Change Password</h4>
+                    <div class="cp-form">
+                        <input type="password" id="oldPassword" placeholder="Current Password">
+                        <input type="password" id="newPassword1" placeholder="New Password">
+                        <input type="password" id="newPassword2" placeholder="Confirm New Password">
+                        <button class="btn btn-primary btn-sm" onclick="changePassword()">Update Password</button>
+                    </div>
+                    <div id="passwordMessage" style="margin-top:8px; font-size:13px; display:none;"></div>
+                </div>
+                <div style="margin-top:18px; padding-top:18px; border-top:2px solid #eef1f5;">
+                    <h4 style="color:#1a2634; margin-bottom:12px;">Active Sessions</h4>
+                    <div id="activeSessions" style="display:flex; gap:12px; flex-wrap:wrap;"></div>
+                </div>
+                <div style="margin-top:18px; padding-top:18px; border-top:2px solid #eef1f5;">
+                    <h4 style="color:#1a2634; margin-bottom:12px;">System Information</h4>
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:12px;">
+                        <div class="financial-card"><div class="number" id="sysUsers">0</div><div class="label">Total Users</div></div>
+                        <div class="financial-card"><div class="number" id="sysDocs">0</div><div class="label">Documents</div></div>
+                        <div class="financial-card"><div class="number" id="sysItems">0</div><div class="label">Inventory Items</div></div>
+                        <div class="financial-card"><div class="number" id="sysSales">0</div><div class="label">Sales Records</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- end content -->
+
+    <!-- FOOTER -->
+    <div class="footer">
+        <span id="footerCompanyName">PrinterCare Uganda Business Management System v2.0</span>
+        <span class="footer-datetime" id="footerDateTime">2026-07-13 14:30:00</span>
+        <span id="footerCompanyContact">📞 0702747217 · printercareuganda@gmail.com</span>
+        <span id="footerCurrency">💰 UGX</span>
+    </div>
+
+</div><!-- end app-container -->
+
+<!-- ─── TOAST ─── -->
+<div id="toast" class="toast"></div>
+
+<!-- ─── EMAIL MODAL ─── -->
+<div class="modal-overlay" id="emailModal">
+    <div class="modal-content">
+        <button class="close-btn" onclick="closeEmailModal()">×</button>
+        <h3>Send Document</h3>
+        <p style="color:#6b7a8a; margin-bottom:14px;">To: <strong id="emailToDisplay">printercareuganda@gmail.com</strong></p>
+        <div style="margin-bottom:14px;">
+            <label style="font-weight:600; display:block; margin-bottom:6px; font-size:13px;">Document</label>
+            <input type="text" id="emailDocType" readonly style="width:100%; padding:10px; border:2px solid #e8ecf2; border-radius:8px; background:#f8f9fb; font-size:13px;">
+        </div>
+        <div style="margin-bottom:18px;">
+            <label style="font-weight:600; display:block; margin-bottom:6px; font-size:13px;">Additional Note</label>
+            <textarea id="emailNote" rows="3" placeholder="Add any additional notes..."></textarea>
+        </div>
+        <button class="btn btn-success" onclick="sendEmailConfirm()" style="width:100%; padding:14px;">Send Email</button>
+    </div>
+</div>
+
+<script>
+    // ─── DATE/TIME SYSTEM ──────────────────────────────────────────────────
+    function getFormattedDateTime() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const dayName = days[now.getDay()];
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const monthName = months[now.getMonth()];
+        return {
+            full: `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`,
+            date: `${year}-${month}-${day}`,
+            time: `${hours}:${minutes}:${seconds}`,
+            dayName: dayName, monthName: monthName, day: day, month: month, year: year,
+            hours: hours, minutes: minutes, seconds: seconds,
+            display: `${dayName}, ${monthName} ${day}, ${year} at ${hours}:${minutes}`
+        };
+    }
+
+    function updateDateTimeDisplay() {
+        const dt = getFormattedDateTime();
+        ['loginDateTime', 'headerDateTime', 'footerDateTime'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = dt.display;
+        });
+        ['plDateTime', 'invDateTime', 'recDateTime', 'balDateTime', 'staDateTime'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = `Generated: ${dt.full}`;
+        });
+        ['docDate', 'docReceiptDate', 'balanceDate'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = dt.date;
+        });
+        document.getElementById('lastUpdateTime').textContent = `Last updated: ${dt.display}`;
+    }
+
+    setInterval(updateDateTimeDisplay, 1000);
+
+    // ─── CURRENCY SYSTEM ──────────────────────────────────────────────────
+    let currentCurrency = 'UGX';
+    const currencySymbols = {
+        'UGX': 'USh',
+        'KES': 'KSh',
+        'TZS': 'TSh',
+        'USD': '$',
+        'EUR': '€',
+        'GBP': '£'
+    };
+
+    function getCurrencySymbol() {
+        return currencySymbols[currentCurrency] || 'USh';
+    }
+
+    function formatCurrency(amount) {
+        const symbol = getCurrencySymbol();
+        return `${symbol} ${Math.round(amount).toLocaleString()}`;
+    }
+
+    function updateCurrency() {
+        const selector = document.getElementById('headerCurrency');
+        currentCurrency = selector.value;
+        document.getElementById('footerCurrency').textContent = `💰 ${currentCurrency}`;
+        // Update all displays
+        updateAllDisplays();
+        showToast(`Currency changed to ${currentCurrency}`, 'info');
+    }
+
+    function updateAllDisplays() {
+        updateDashboard();
+        updateTotals();
+        updateCostSummary();
+        updateSalesSummary();
+        generateInvoice();
+        generateReceipt();
+        generateBalanceSheet();
+        generateProfitLoss();
+        generateStatement();
+    }
+
+    // ─── ONLINE STATUS ──────────────────────────────────────────────────────
+    let isOnline = navigator.onLine;
+    let lastUpdateTime = Date.now();
+
+    function updateOnlineStatus() {
+        isOnline = navigator.onLine;
+        const statusEl = document.getElementById('onlineStatus');
+        if (isOnline) {
+            statusEl.textContent = '🟢 Online';
+            statusEl.className = 'online-status online';
+            if (Date.now() - lastUpdateTime > 30000) {
+                autoUpdateStock();
+                lastUpdateTime = Date.now();
+            }
+        } else {
+            statusEl.textContent = '🔴 Offline';
+            statusEl.className = 'online-status offline';
+        }
+    }
+
+    window.addEventListener('online', () => {
+        updateOnlineStatus();
+        showToast('🟢 System is back online! Auto-updating stock...', 'success');
+        setTimeout(autoUpdateStock, 1000);
+    });
+    window.addEventListener('offline', () => {
+        updateOnlineStatus();
+        showToast('🔴 System is offline. Please check your connection.', 'error');
+    });
+    setInterval(updateOnlineStatus, 5000);
+
+    function autoUpdateStock() {
+        const dt = getFormattedDateTime();
+        showToast('🔄 Auto-updating stock data...', 'info');
+        updateDashboard();
+        updateCostSummary();
+        document.getElementById('lastUpdateTime').textContent = `Last updated: ${dt.display}`;
+        showToast('✅ Stock data updated successfully!', 'success');
+    }
+
+    // ─── COMPANY CONFIGURATION ──────────────────────────────────────────────
+    let companyConfig = {
+        name: 'PrinterCare Uganda',
+        phone: '0702747217',
+        email: 'printercareuganda@gmail.com',
+        address: 'Kampala, Uganda',
+        website: '',
+        currency: 'UGX'
+    };
+
+    function loadCompanyConfig() {
+        const saved = localStorage.getItem('printercare_company');
+        if (saved) { try { const data = JSON.parse(saved); companyConfig = { ...companyConfig, ...data }; } catch(e) {} }
+        applyCompanyConfig();
+    }
+
+    function saveCompanyConfig() { localStorage.setItem('printercare_company', JSON.stringify(companyConfig)); applyCompanyConfig(); }
+
+    function applyCompanyConfig() {
+        document.getElementById('loginCompanyName').textContent = companyConfig.name;
+        document.getElementById('headerCompanyName').innerHTML = `${companyConfig.name} <small id="headerCompanyPhone">📞 ${companyConfig.phone}</small>`;
+        document.getElementById('resetEmailDisplay').textContent = companyConfig.email;
+        document.getElementById('emailToDisplay').textContent = companyConfig.email;
+        ['pl', 'inv', 'rec', 'bal', 'sta'].forEach(type => {
+            const infoEl = document.getElementById(type + 'CompanyInfo');
+            const footerEl = document.getElementById(type + 'Footer');
+            const addressEl = document.getElementById(type + 'CompanyAddress');
+            if (infoEl) infoEl.textContent = `📞 ${companyConfig.phone} · 📧 ${companyConfig.email}`;
+            if (footerEl) footerEl.textContent = `📞 ${companyConfig.phone} · 📧 ${companyConfig.email}`;
+            if (addressEl) addressEl.textContent = `📍 ${companyConfig.address}`;
+        });
+        document.getElementById('footerCompanyName').textContent = `${companyConfig.name} Business Management System v2.0`;
+        document.getElementById('footerCompanyContact').textContent = `📞 ${companyConfig.phone} · ${companyConfig.email}`;
+        document.getElementById('adminCompanyPreview').textContent = `${companyConfig.name} | 📞 ${companyConfig.phone} | 📧 ${companyConfig.email} | 📍 ${companyConfig.address} | 💰 ${companyConfig.currency}`;
+        currentCurrency = companyConfig.currency || 'UGX';
+        document.getElementById('headerCurrency').value = currentCurrency;
+        document.getElementById('footerCurrency').textContent = `💰 ${currentCurrency}`;
+        document.getElementById('editCompanyCurrency').value = currentCurrency;
+    }
+
+    function openEditCompany() {
+        if (currentUser?.role !== 'admin') { showToast('Admin access required', 'error'); return; }
+        document.getElementById('editCompanyName').value = companyConfig.name;
+        document.getElementById('editCompanyPhone').value = companyConfig.phone;
+        document.getElementById('editCompanyEmail').value = companyConfig.email;
+        document.getElementById('editCompanyAddress').value = companyConfig.address || '';
+        document.getElementById('editCompanyWebsite').value = companyConfig.website || '';
+        document.getElementById('editCompanyCurrency').value = companyConfig.currency || 'UGX';
+        document.getElementById('companyMsg').style.display = 'none';
+        document.getElementById('editCompanyModal').classList.add('active');
+    }
+
+    function closeEditCompanyModal() { document.getElementById('editCompanyModal').classList.remove('active'); }
+
+    function saveCompanyDetails() {
+        if (currentUser?.role !== 'admin') { showToast('Admin access required', 'error'); return; }
+        const name = document.getElementById('editCompanyName').value.trim();
+        const phone = document.getElementById('editCompanyPhone').value.trim();
+        const email = document.getElementById('editCompanyEmail').value.trim();
+        const address = document.getElementById('editCompanyAddress').value.trim();
+        const website = document.getElementById('editCompanyWebsite').value.trim();
+        const currency = document.getElementById('editCompanyCurrency').value;
+        const msg = document.getElementById('companyMsg');
+        if (!name || !phone || !email) {
+            msg.textContent = 'Please fill in all required fields (Name, Phone, Email)';
+            msg.style.color = '#dc3545'; msg.style.display = 'block'; return;
+        }
+        companyConfig.name = name; companyConfig.phone = phone; companyConfig.email = email; 
+        companyConfig.address = address || 'Kampala, Uganda'; companyConfig.website = website;
+        companyConfig.currency = currency;
+        saveCompanyConfig();
+        currentCurrency = currency;
+        document.getElementById('headerCurrency').value = currency;
+        document.getElementById('footerCurrency').textContent = `💰 ${currency}`;
+        msg.textContent = '✅ Company details updated successfully!';
+        msg.style.color = '#28a745'; msg.style.display = 'block';
+        showToast('Company details updated!', 'success');
+        setTimeout(() => { closeEditCompanyModal(); updateAllDisplays(); }, 1000);
+    }
+
+    // ─── AUTH SYSTEM ──────────────────────────────────────────────────────────
+    let currentUser = null, users = [], activeSessions = [], resetCodeStore = {}, editingUsername = '';
+
+    function initAuth() {
+        const saved = localStorage.getItem('printercare_users');
+        if (saved) { try { users = JSON.parse(saved); } catch(e) { users = []; } }
+        if (users.length === 0) { users = [{ username: 'admin', password: 'admin123', role: 'admin' }]; localStorage.setItem('printercare_users', JSON.stringify(users)); }
+        const sessions = localStorage.getItem('printercare_sessions');
+        if (sessions) { try { activeSessions = JSON.parse(sessions); } catch(e) { activeSessions = []; } }
+        const codes = localStorage.getItem('printercare_reset_codes');
+        if (codes) { try { resetCodeStore = JSON.parse(codes); } catch(e) { resetCodeStore = {}; } }
+    }
+
+    function login() {
+        const username = document.getElementById('loginUsername').value.trim();
+        const password = document.getElementById('loginPassword').value.trim();
+        const user = users.find(u => u.username === username && u.password === password);
+        if (user) {
+            currentUser = user;
+            const session = { username: user.username, role: user.role, loginTime: new Date().toISOString(), sessionId: Date.now().toString(36) + Math.random().toString(36).substr(2, 5) };
+            activeSessions = activeSessions.filter(s => s.username !== user.username);
+            activeSessions.push(session);
+            localStorage.setItem('printercare_sessions', JSON.stringify(activeSessions));
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appContainer').style.display = 'flex';
+            document.getElementById('currentUser').textContent = user.username;
+            document.getElementById('currentRole').textContent = user.role === 'admin' ? 'Admin' : 'Employee';
+            if (user.role === 'employee') {
+                document.getElementById('adminTab').style.display = 'none';
+                document.getElementById('documentsTab').style.display = 'none';
+                document.querySelectorAll('.delete-btn').forEach(b => b.style.display = 'none');
+            } else {
+                document.getElementById('adminTab').style.display = 'inline-block';
+                document.getElementById('documentsTab').style.display = 'inline-block';
+                document.querySelectorAll('.delete-btn').forEach(b => b.style.display = 'inline-block');
+            }
+            showToast(`Welcome ${user.username}!`, 'success');
+            initApp();
+            updateActiveSessions();
+            updateDateTimeDisplay();
+            updateOnlineStatus();
+        } else {
+            document.getElementById('loginError').style.display = 'block';
+            setTimeout(() => document.getElementById('loginError').style.display = 'none', 3000);
+        }
+    }
+
+    function logout() {
+        activeSessions = activeSessions.filter(s => s.username !== currentUser?.username);
+        localStorage.setItem('printercare_sessions', JSON.stringify(activeSessions));
+        currentUser = null;
+        document.getElementById('appContainer').style.display = 'none';
+        document.getElementById('loginScreen').classList.remove('hidden');
+        document.getElementById('loginPassword').value = '';
+        showToast('Logged out successfully', 'info');
+        updateActiveSessions();
+    }
+
+    function forceLogoutUser(username) {
+        if (currentUser?.role !== 'admin') { showToast('Admin access required', 'error'); return; }
+        if (username === currentUser.username) { showToast('Cannot logout yourself here. Use Logout button.', 'error'); return; }
+        if (confirm(`Force logout user "${username}"?`)) {
+            activeSessions = activeSessions.filter(s => s.username !== username);
+            localStorage.setItem('printercare_sessions', JSON.stringify(activeSessions));
+            updateActiveSessions();
+            showToast(`User ${username} logged out`, 'success');
+        }
+    }
+
+    function updateActiveSessions() {
+        const container = document.getElementById('activeSessions');
+        if (!container) return;
+        if (activeSessions.length === 0) { container.innerHTML = '<div style="color:#6b7a8a; padding:10px;">No active sessions</div>'; return; }
+        let html = '';
+        activeSessions.forEach(session => {
+            const isCurrent = session.username === currentUser?.username;
+            html += `<div style="background:white; padding:10px 18px; border-radius:8px; border:1px solid #e8ecf2; display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+                <span style="font-weight:600;">${session.username}</span>
+                <span style="font-size:11px; padding:2px 14px; border-radius:12px; ${session.role === 'admin' ? 'background:#1a2634; color:white;' : 'background:#eef1f5; color:#1a2634;'}">${session.role}</span>
+                <span style="font-size:11px; color:#6b7a8a;">${isCurrent ? 'You' : ''}</span>
+                <span style="font-size:10px; color:#6b7a8a;">${new Date(session.loginTime).toLocaleString()}</span>
+                ${!isCurrent && currentUser?.role === 'admin' ? `<button class="btn btn-danger btn-sm" onclick="forceLogoutUser('${session.username}')">Logout</button>` : ''}
+            </div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    function changePassword() {
+        const oldPass = document.getElementById('oldPassword').value.trim();
+        const newPass1 = document.getElementById('newPassword1').value.trim();
+        const newPass2 = document.getElementById('newPassword2').value.trim();
+        const msg = document.getElementById('passwordMessage');
+        if (!oldPass || !newPass1 || !newPass2) { msg.textContent = 'Please fill all fields'; msg.style.color = '#dc3545'; msg.style.display = 'block'; return; }
+        if (newPass1.length < 4) { msg.textContent = 'Password must be at least 4 characters'; msg.style.color = '#dc3545'; msg.style.display = 'block'; return; }
+        if (newPass1 !== newPass2) { msg.textContent = 'New passwords do not match'; msg.style.color = '#dc3545'; msg.style.display = 'block'; return; }
+        const user = users.find(u => u.username === currentUser?.username);
+        if (!user || user.password !== oldPass) { msg.textContent = 'Current password is incorrect'; msg.style.color = '#dc3545'; msg.style.display = 'block'; return; }
+        user.password = newPass1;
+        localStorage.setItem('printercare_users', JSON.stringify(users));
+        msg.textContent = 'Password updated successfully!'; msg.style.color = '#28a745'; msg.style.display = 'block';
+        document.getElementById('oldPassword').value = ''; document.getElementById('newPassword1').value = ''; document.getElementById('newPassword2').value = '';
+        showToast('Password updated successfully!', 'success');
+        setTimeout(() => msg.style.display = 'none', 5000);
+    }
+
+    function showChangePassword() { document.getElementById('changePassModal').classList.add('active'); document.getElementById('cpMessage').style.display = 'none'; }
+    function closeChangePassModal() { document.getElementById('changePassModal').classList.remove('active'); }
+
+    function changePasswordLogin() {
+        const username = document.getElementById('cpUsername').value.trim();
+        const currentPass = document.getElementById('cpCurrentPass').value.trim();
+        const newPass = document.getElementById('cpNewPass').value.trim();
+        const confirmPass = document.getElementById('cpConfirmPass').value.trim();
+        const msg = document.getElementById('cpMessage');
+        if (!username || !currentPass || !newPass || !confirmPass) { msg.textContent = 'Please fill all fields'; msg.style.color = '#dc3545'; msg.style.display = 'block'; return; }
+        if (newPass.length < 4) { msg.textContent = 'Password must be at least 4 characters'; msg.style.color = '#dc3545'; msg.style.display = 'block'; return; }
+        if (newPass !== confirmPass) { msg.textContent = 'New passwords do not match'; msg.style.color = '#dc3545'; msg.style.display = 'block'; return; }
+        const user = users.find(u => u.username === username);
+        if (!user) { msg.textContent = 'User not found'; msg.style.color = '#dc3545'; msg.style.display = 'block'; return; }
+        if (user.password !== currentPass) { msg.textContent = 'Current password is incorrect'; msg.style.color = '#dc3545'; msg.style.display = 'block'; return; }
+        user.password = newPass;
+        localStorage.setItem('printercare_users', JSON.stringify(users));
+        msg.textContent = '✅ Password updated successfully! You can now login.'; msg.style.color = '#28a745'; msg.style.display = 'block';
+        document.getElementById('cpUsername').value = ''; document.getElementById('cpCurrentPass').value = ''; document.getElementById('cpNewPass').value = ''; document.getElementById('cpConfirmPass').value = '';
+        showToast('Password updated successfully!', 'success');
+        setTimeout(() => { closeChangePassModal(); }, 2000);
+    }
+
+    function showResetPassword() {
+        document.getElementById('resetModal').classList.add('active');
+        document.getElementById('resetMessage').style.display = 'none';
+        document.getElementById('resetCodeGroup').style.display = 'none';
+        document.getElementById('resetNewPassGroup').style.display = 'none';
+        document.getElementById('resetConfirmPassGroup').style.display = 'none';
+        document.getElementById('resetBtn').style.display = 'block';
+        document.getElementById('resetConfirmBtn').style.display = 'none';
+        document.getElementById('resetUsername').value = '';
+        document.getElementById('resetCodeInput').value = '';
+        document.getElementById('resetNewPassword').value = '';
+        document.getElementById('resetConfirmPassword').value = '';
+    }
+
+    function closeResetModal() { document.getElementById('resetModal').classList.remove('active'); }
+
+    function sendResetCode() {
+        const username = document.getElementById('resetUsername').value.trim();
+        const user = users.find(u => u.username === username);
+        const msg = document.getElementById('resetMessage');
+        if (!username) { msg.textContent = 'Please enter your username'; msg.style.color = '#dc3545'; msg.style.display = 'block'; return; }
+        if (!user) { msg.textContent = '❌ User not found. Please check your username.'; msg.style.color = '#dc3545'; msg.style.display = 'block'; return; }
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        resetCodeStore[username] = { code: code, timestamp: Date.now() };
+        localStorage.setItem('printercare_reset_codes', JSON.stringify(resetCodeStore));
+        const emailBody = `${companyConfig.name} - Password Reset Code\n\nHello ${username},\n\nYou requested to reset your password. Please use the following 6-digit code:\n\n🔑 RESET CODE: ${code}\n\nThis code expires in 15 minutes.\n\nIf you did not request this, please ignore this email.\n\n---\n${companyConfig.name}\n📞 ${companyConfig.phone} · 📧 ${companyConfig.email}\n📍 ${companyConfig.address}`;
+        const mailtoLink = `mailto:${companyConfig.email}?subject=Password Reset Code for ${username}&body=${encodeURIComponent(emailBody)}`;
+        window.open(mailtoLink, '_blank');
+        document.getElementById('resetCodeGroup').style.display = 'block';
+        document.getElementById('resetNewPassGroup').style.display = 'block';
+        document.getElementById('resetConfirmPassGroup').style.display = 'block';
+        document.getElementById('resetBtn').style.display = 'none';
+        document.getElementById('resetConfirmBtn').style.display = 'block';
+        msg.textContent = `✅ Reset code sent to ${companyConfig.email}. Please check your email.`;
+        msg.style.color = '#28a745'; msg.style.display = 'block';
+        showToast('Reset code sent to your email!', 'success');
+    }
+
+    function confirmResetCode() {
+        const username = document.getElementById('resetUsername').value.trim();
+        const enteredCode = document.getElementById('resetCodeInput').value.trim();
+        const newPass = document.getElementById('resetNewPassword').value.trim();
+        const confirmPass = document.getElementById('resetConfirmPassword').value.trim();
+        const msg = document.getElementById('resetMessage');
+        if (!enteredCode) { msg.textContent = 'Please enter the reset code sent to your email'; msg.style.color = '#dc3545'; msg.style.display = 'block'; return; }
+        const stored = resetCodeStore[username];
+        if (!stored) { msg.textContent = '❌ No reset request found. Please request a new code.'; msg.style.color = '#dc3545'; msg.style.display = 'block'; return; }
+        if (Date.now() - stored.timestamp > 900000) {
+            delete resetCodeStore[username];
+            localStorage.setItem('printercare_reset_codes', JSON.stringify(resetCodeStore));
+            msg.textContent = '❌ Reset code expired. Please request a new code.'; msg.style.color = '#dc3545'; msg.style.display = 'block';
+            document.getElementById('resetBtn').style.display = 'block';
+            document.getElementById('resetConfirmBtn').style.display = 'none';
+            document.getElementById('resetCodeGroup').style.display = 'none';
+            document.getElementById('resetNewPassGroup').style.display = 'none';
+            document.getElementById('resetConfirmPassGroup').style.display = 'none';
+            return;
+        }
+        if (stored.code !== enteredCode) { msg.textContent = '❌ Invalid reset code. Please try again.'; msg.style.color = '#dc3545'; msg.style.display = 'block'; return; }
+        if (!newPass || !confirmPass) { msg.textContent = 'Please enter and confirm your new password'; msg.style.color = '#dc3545'; msg.style.display = 'block'; return; }
+        if (newPass.length < 4) { msg.textContent = 'Password must be at least 4 characters'; msg.style.color = '#dc3545'; msg.style.display = 'block'; return; }
+        if (newPass !== confirmPass) { msg.textContent = 'Passwords do not match'; msg.style.color = '#dc3545'; msg.style.display = 'block'; return; }
+        const user = users.find(u => u.username === username);
+        if (user) {
+            user.password = newPass;
+            localStorage.setItem('printercare_users', JSON.stringify(users));
+            delete resetCodeStore[username];
+            localStorage.setItem('printercare_reset_codes', JSON.stringify(resetCodeStore));
+            msg.textContent = '✅ Password reset successfully! You can now login.'; msg.style.color = '#28a745'; msg.style.display = 'block';
+            showToast('Password reset successfully!', 'success');
+            setTimeout(() => { closeResetModal(); }, 3000);
+        } else { msg.textContent = '❌ User not found. Please try again.'; msg.style.color = '#dc3545'; msg.style.display = 'block'; }
+    }
+
+    function addUser() {
+        if (currentUser?.role !== 'admin') { showToast('Admin access required', 'error'); return; }
+        const username = document.getElementById('newUsername').value.trim();
+        const password = document.getElementById('newPassword').value.trim();
+        const role = document.getElementById('newRole').value;
+        if (!username || !password) { showToast('Please fill all fields', 'error'); return; }
+        if (users.find(u => u.username === username)) { showToast('Username already exists', 'error'); return; }
+        users.push({ username, password, role });
+        localStorage.setItem('printercare_users', JSON.stringify(users));
+        document.getElementById('newUsername').value = ''; document.getElementById('newPassword').value = '';
+        renderUsers(); updateSysInfo();
+        showToast(`User ${username} added as ${role}`, 'success');
+    }
+
+    function deleteUser(username) {
+        if (currentUser?.role !== 'admin') { showToast('Admin access required', 'error'); return; }
+        if (username === 'admin') { showToast('Cannot delete admin user', 'error'); return; }
+        if (username === currentUser.username) { showToast('Cannot delete yourself', 'error'); return; }
+        if (confirm(`Delete user "${username}"?`)) {
+            users = users.filter(u => u.username !== username);
+            activeSessions = activeSessions.filter(s => s.username !== username);
+            localStorage.setItem('printercare_users', JSON.stringify(users));
+            localStorage.setItem('printercare_sessions', JSON.stringify(activeSessions));
+            renderUsers(); updateSysInfo(); updateActiveSessions();
+            showToast(`User ${username} deleted`, 'success');
+        }
+    }
+
+    function editUser(username) {
+        if (currentUser?.role !== 'admin') { showToast('Admin access required', 'error'); return; }
+        const user = users.find(u => u.username === username);
+        if (!user) { showToast('User not found', 'error'); return; }
+        editingUsername = username;
+        document.getElementById('editUserUsername').value = username;
+        document.getElementById('editUserRole').value = user.role;
+        document.getElementById('editUserPassword').value = '';
+        document.getElementById('userEditMsg').style.display = 'none';
+        document.getElementById('editUserModal').classList.add('active');
+    }
+
+    function closeEditUserModal() { document.getElementById('editUserModal').classList.remove('active'); }
+
+    function saveUserEdit() {
+        const username = document.getElementById('editUserUsername').value;
+        const role = document.getElementById('editUserRole').value;
+        const newPassword = document.getElementById('editUserPassword').value.trim();
+        const msg = document.getElementById('userEditMsg');
+        const user = users.find(u => u.username === username);
+        if (!user) { msg.textContent = 'User not found'; msg.style.color = '#dc3545'; msg.style.display = 'block'; return; }
+        user.role = role;
+        if (newPassword && newPassword.length >= 4) { user.password = newPassword; }
+        else if (newPassword && newPassword.length < 4) { msg.textContent = 'Password must be at least 4 characters'; msg.style.color = '#dc3545'; msg.style.display = 'block'; return; }
+        localStorage.setItem('printercare_users', JSON.stringify(users));
+        msg.textContent = 'User updated successfully!'; msg.style.color = '#28a745'; msg.style.display = 'block';
+        renderUsers(); showToast(`User ${username} updated`, 'success');
+        setTimeout(() => { closeEditUserModal(); }, 1500);
+    }
+
+    function renderUsers() {
+        const container = document.getElementById('userList');
+        if (!container) return;
+        if (users.length === 0) { container.innerHTML = '<div style="color:#6b7a8a; padding:10px;">No users found.</div>'; return; }
+        let html = '';
+        users.forEach(u => {
+            const isCurrent = u.username === currentUser?.username;
+            const isOnline = activeSessions.some(s => s.username === u.username);
+            html += `<div class="user-item"><div class="user-info">
+                <span class="username">${u.username} ${isCurrent ? 'You' : ''}</span>
+                <span class="user-role ${u.role}">${u.role}</span>
+                <span class="user-status ${isOnline ? 'online' : 'offline'}">${isOnline ? 'Online' : 'Offline'}</span>
+            </div><div style="display:flex; gap:6px;">
+                ${currentUser?.role === 'admin' ? `<button class="btn btn-info btn-sm" onclick="editUser('${u.username}')">Edit</button>` : ''}
+                ${u.role !== 'admin' && u.username !== 'admin' && currentUser?.role === 'admin' ? `<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.username}')">Delete</button>` : ''}
+            </div></div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !document.getElementById('loginScreen').classList.contains('hidden')) { login(); }
+    });
+
+    // ─── INIT AUTH ──────────────────────────────────────────────────────────────
+    initAuth(); loadCompanyConfig();
+
+    // ─── APP DATA ──────────────────────────────────────────────────────────────
+    let items = [], sales = [], documents = [], costs = [];
+    let receiptItems = [];
+
+    const defaultItems = [
+        { commodity: "Printhead", model: "L382", spec: "Original 99% new", qty: 1, price: 111510, cost: 85000 },
+        { commodity: "Mainboard", model: "L382", spec: "Original 90% new", qty: 8, price: 18635, cost: 14000 },
+        { commodity: "主板", model: "L3110", spec: "Original 90% new", qty: 5, price: 33869, cost: 25000 },
+        { commodity: "logicboard", model: "p1102", spec: "Original 90% new", qty: 1, price: 126630, cost: 95000 },
+        { commodity: "主板", model: "L3110", spec: "Compatible new", qty: 15, price: 4498, cost: 3000 },
+        { commodity: "rubber", model: "L382", spec: "Compatible new", qty: 15, price: 3931, cost: 2500 },
+        { commodity: "Head", model: "L382", spec: "20pins Compatible new", qty: 15, price: 3629, cost: 2200 },
+        { commodity: "Cable+Encoder strip sensor cable", model: "L3110", spec: "20pins, 40.2CM Compatible new", qty: 15, price: 2381, cost: 1500 },
+        { commodity: "Encoder strip sensor cable", model: "L3110", spec: "4pins", qty: 15, price: 2268, cost: 1400 },
+        { commodity: "IC chip", model: "E09A7218A", spec: "Original new", qty: 15, price: 3478, cost: 2200 },
+        { commodity: "transitors", model: "A2222 & C6144", spec: "Original new", qty: 10, price: 1966, cost: 1200 },
+        { commodity: "Print head", model: "canon g3410 color", spec: "Original 90% new", qty: 1, price: 49631, cost: 35000 },
+        { commodity: "cartridge", model: "canon g3410 black", spec: "Original 90% new", qty: 2, price: 49631, cost: 35000 },
+        { commodity: "inkpads", model: "", spec: "Compatible new", qty: 3, price: 1890, cost: 1200 },
+        { commodity: "维护箱海绵", model: "13110", spec: "Compatible new", qty: 3, price: 2646, cost: 1800 }
+    ];
+
+    const tbody = document.getElementById('tableBody');
+    const subtotalSpan = document.getElementById('subtotalDisplay');
+    const shippingInput = document.getElementById('shippingInput');
+    const grandTotalSpan = document.getElementById('grandTotalDisplay');
+    const rowCountSpan = document.getElementById('rowCount');
+    const totalItemsSpan = document.getElementById('totalItemsDisplay');
+    const totalBuyingSpan = document.getElementById('totalBuyingDisplay');
+
+    // ─── COST MANAGEMENT ──────────────────────────────────────────────────
+    function addCostRow() {
+        const container = document.getElementById('costList');
+        const div = document.createElement('div');
+        div.className = 'cost-entry';
+        div.innerHTML = `
+            <input type="text" placeholder="Product Name" class="cost-item" onchange="updateCostSummary()">
+            <input type="number" placeholder="Buying Price" class="cost-buy" step="100" oninput="updateCostSummary()">
+            <input type="number" placeholder="Selling Price" class="cost-sell" step="100" oninput="updateCostSummary()">
+            <input type="number" placeholder="Stock Qty" class="cost-qty" value="1" min="1" oninput="updateCostSummary()">
+            <input type="number" placeholder="Profit" class="cost-profit" readonly style="background:#f0f2f5; font-weight:600; text-align:right;">
+            ${currentUser?.role === 'employee' ? '' : `<button class="btn btn-danger btn-sm" onclick="removeCostRow(this)">✕</button>`}
+        `;
+        container.appendChild(div);
+        updateCostSummary();
+        showToast('Product cost added', 'success');
+    }
+
+    function removeCostRow(btn) {
+        if (currentUser?.role === 'employee') { showToast('Employees cannot remove cost entries', 'error'); return; }
+        const entry = btn.closest('.cost-entry');
+        if (document.querySelectorAll('.cost-entry').length <= 1) {
+            showToast('Cannot remove last entry', 'error');
+            return;
+        }
+        if (confirm('Remove this cost entry?')) {
+            entry.remove();
+            updateCostSummary();
+            showToast('Cost entry removed', 'success');
+        }
+    }
+
+    function updateCostSummary() {
+        const entries = document.querySelectorAll('.cost-entry');
+        let totalCost = 0, totalProfit = 0, totalItems = 0;
+        
+        entries.forEach(entry => {
+            const buyPrice = parseFloat(entry.querySelector('.cost-buy').value) || 0;
+            const sellPrice = parseFloat(entry.querySelector('.cost-sell').value) || 0;
+            const qty = parseFloat(entry.querySelector('.cost-qty').value) || 0;
+            const profit = (sellPrice - buyPrice) * qty;
+            totalCost += buyPrice * qty;
+            totalProfit += profit;
+            totalItems += qty;
+            
+            const profitInput = entry.querySelector('.cost-profit');
+            if (profitInput) {
+                profitInput.value = Math.round(profit);
+                if (profit > 0) {
+                    profitInput.style.color = '#28a745';
+                } else if (profit < 0) {
+                    profitInput.style.color = '#dc3545';
+                } else {
+                    profitInput.style.color = '#ffc107';
+                }
+            }
+        });
+        
+        document.getElementById('costTotalItems').textContent = totalItems;
+        document.getElementById('costTotalValue').textContent = formatCurrency(totalCost);
+        document.getElementById('costTotalProfit').textContent = formatCurrency(totalProfit);
+        
+        costs = [];
+        entries.forEach(entry => {
+            costs.push({
+                item: entry.querySelector('.cost-item').value,
+                buy: parseFloat(entry.querySelector('.cost-buy').value) || 0,
+                sell: parseFloat(entry.querySelector('.cost-sell').value) || 0,
+                qty: parseFloat(entry.querySelector('.cost-qty').value) || 0,
+                profit: parseFloat(entry.querySelector('.cost-profit').value) || 0
+            });
+        });
+        autoSave();
+    }
+
+    function clearCosts() {
+        if (currentUser?.role === 'employee') { showToast('Employees cannot clear cost entries', 'error'); return; }
+        if (costs.length === 0) return;
+        if (confirm('Clear all cost entries?')) {
+            document.querySelectorAll('.cost-entry').forEach(e => e.remove());
+            addCostRow();
+            updateCostSummary();
+            showToast('Cost entries cleared', 'success');
+        }
+    }
+
+    function loadCosts() {
+        const container = document.getElementById('costList');
+        container.innerHTML = '';
+        if (costs.length === 0) {
+            addCostRow();
+            return;
+        }
+        costs.forEach(cost => {
+            const div = document.createElement('div');
+            div.className = 'cost-entry';
+            div.innerHTML = `
+                <input type="text" placeholder="Product Name" class="cost-item" value="${escapeHtml(cost.item || '')}" onchange="updateCostSummary()">
+                <input type="number" placeholder="Buying Price" class="cost-buy" value="${cost.buy || 0}" step="100" oninput="updateCostSummary()">
+                <input type="number" placeholder="Selling Price" class="cost-sell" value="${cost.sell || 0}" step="100" oninput="updateCostSummary()">
+                <input type="number" placeholder="Stock Qty" class="cost-qty" value="${cost.qty || 1}" min="1" oninput="updateCostSummary()">
+                <input type="number" placeholder="Profit" class="cost-profit" value="${cost.profit || 0}" readonly style="background:#f0f2f5; font-weight:600; text-align:right;">
+                ${currentUser?.role === 'employee' ? '' : `<button class="btn btn-danger btn-sm" onclick="removeCostRow(this)">✕</button>`}
+            `;
+            container.appendChild(div);
+        });
+        updateCostSummary();
+    }
+
+    // ─── DASHBOARD ──────────────────────────────────────────────────────────
+    function updateDashboard() {
+        let totalRevenue = 0, totalCosts = 0, totalStockValue = 0, totalItems = 0, lowStock = 0;
+        
+        document.querySelectorAll('.sales-entry').forEach(entry => {
+            const total = parseFloat(entry.querySelector('.sale-total').value) || 0;
+            totalRevenue += total;
+            const itemName = entry.querySelector('.sale-item-select')?.value || entry.querySelector('.sale-item')?.value || '';
+            const invItem = items.find(i => i.commodity.toLowerCase() === itemName.toLowerCase());
+            if (invItem) {
+                const qty = parseFloat(entry.querySelector('.sale-qty').value) || 0;
+                totalCosts += qty * (parseFloat(invItem.cost) || parseFloat(invItem.price) * 0.6);
+            }
+        });
+        
+        items.forEach(item => {
+            const qty = parseFloat(item.qty) || 0;
+            const price = parseFloat(item.price) || 0;
+            const cost = parseFloat(item.cost) || (price * 0.6);
+            totalStockValue += qty * price;
+            totalItems += qty;
+            if (qty > 0 && qty <= 2) lowStock++;
+            else if (qty === 0) lowStock++;
+        });
+        
+        const netProfit = totalRevenue - totalCosts;
+        const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+
+        document.getElementById('dashTotalRevenue').textContent = formatCurrency(totalRevenue);
+        document.getElementById('dashTotalCosts').textContent = formatCurrency(totalCosts);
+        document.getElementById('dashNetProfit').textContent = formatCurrency(netProfit);
+        document.getElementById('dashStockValue').textContent = formatCurrency(totalStockValue);
+        document.getElementById('dashTotalItems').textContent = totalItems;
+        document.getElementById('dashLowStock').textContent = lowStock;
+
+        const profitChange = document.getElementById('dashProfitChange');
+        if (netProfit > 0) {
+            profitChange.textContent = `+${profitMargin.toFixed(1)}% Profit`;
+            profitChange.className = 'change positive';
+            document.getElementById('dashProfitCard').className = 'dashboard-card profit';
+            document.getElementById('profitStatusIndicator').className = 'profit-indicator profit';
+            document.getElementById('profitStatusIndicator').textContent = '✅ PROFIT';
+        } else if (netProfit < 0) {
+            profitChange.textContent = `${profitMargin.toFixed(1)}% Loss`;
+            profitChange.className = 'change negative';
+            document.getElementById('dashProfitCard').className = 'dashboard-card loss';
+            document.getElementById('profitStatusIndicator').className = 'profit-indicator loss';
+            document.getElementById('profitStatusIndicator').textContent = '❌ LOSS';
+        } else {
+            profitChange.textContent = '0% Break Even';
+            profitChange.className = 'change neutral';
+            document.getElementById('dashProfitCard').className = 'dashboard-card warning';
+            document.getElementById('profitStatusIndicator').className = 'profit-indicator break-even';
+            document.getElementById('profitStatusIndicator').textContent = '⚖️ BREAK EVEN';
+        }
+
+        const revChange = document.getElementById('dashRevenueChange');
+        revChange.textContent = totalRevenue > 0 ? `+${profitMargin.toFixed(1)}%` : '0%';
+        revChange.className = 'change ' + (totalRevenue > 0 ? 'positive' : 'neutral');
+
+        document.getElementById('profitStatusDetail').textContent = `Revenue: ${formatCurrency(totalRevenue)} | Buying Costs: ${formatCurrency(totalCosts)} | Net: ${formatCurrency(netProfit)}`;
+
+        let html = '';
+        items.forEach(item => {
+            const qty = parseFloat(item.qty) || 0;
+            const price = parseFloat(item.price) || 0;
+            const cost = parseFloat(item.cost) || (price * 0.6);
+            const profitPerUnit = price - cost;
+            let status = '', statusClass = '';
+            if (qty === 0) { status = 'Out of Stock'; statusClass = 'out-of-stock'; }
+            else if (qty <= 2) { status = 'Low Stock'; statusClass = 'low-stock'; }
+            else { status = 'In Stock'; statusClass = 'in-stock'; }
+            const profitClass = profitPerUnit > 0 ? 'profit' : (profitPerUnit < 0 ? 'loss' : 'break-even');
+            html += `<tr>
+                <td>${escapeHtml(item.commodity || '')}</td>
+                <td>${escapeHtml(item.model || '')}</td>
+                <td style="text-align:center;">${qty}</td>
+                <td style="text-align:right;">${formatCurrency(price)}</td>
+                <td style="text-align:right;">${formatCurrency(cost)}</td>
+                <td style="text-align:right;"><span class="profit-badge ${profitClass}">${formatCurrency(profitPerUnit)}</span></td>
+                <td><span class="stock-badge ${statusClass}">${status}</span></td>
+            </tr>`;
+        });
+        document.getElementById('dashboardTableBody').innerHTML = html || '<tr><td colspan="7" style="text-align:center; color:#6b7a8a; padding:20px;">No items in stock</td></tr>';
+    }
+
+    // ─── Render Inventory ──────────────────────────────────────────────────
+    function renderTable() {
+        let html = '';
+        let totalItems = 0, totalBuying = 0;
+        items.forEach((item, index) => {
+            const qty = parseFloat(item.qty) || 0;
+            const price = parseFloat(item.price) || 0;
+            const cost = parseFloat(item.cost) || 0;
+            const amount = qty * price;
+            const totalCost = qty * cost;
+            totalItems += qty;
+            totalBuying += totalCost;
+            const isEmployee = currentUser?.role === 'employee';
+            html += `<tr data-index="${index}">
+                <td><input class="editable-input" type="text" value="${escapeHtml(item.commodity || '')}" onchange="updateField(${index}, 'commodity', this.value)" placeholder="Item..."></td>
+                <td><input class="editable-input" type="text" value="${escapeHtml(item.model || '')}" onchange="updateField(${index}, 'model', this.value)" placeholder="Model..."></td>
+                <td><input class="editable-input" type="text" value="${escapeHtml(item.spec || '')}" onchange="updateField(${index}, 'spec', this.value)" placeholder="Specs..."></td>
+                <td><input class="editable-input qty-input" type="number" value="${qty}" min="0" step="1" oninput="updateField(${index}, 'qty', parseFloat(this.value) || 0)"></td>
+                <td><input class="editable-input price-input" type="number" value="${Math.round(price)}" min="0" step="100" oninput="updateField(${index}, 'price', parseFloat(this.value) || 0)"></td>
+                <td><input class="editable-input price-input" type="number" value="${Math.round(cost)}" min="0" step="100" oninput="updateField(${index}, 'cost', parseFloat(this.value) || 0)" placeholder="Buying Price"></td>
+                <td style="text-align:right;"><span class="col-amount" id="amount-${index}">${formatCurrency(amount)}</span></td>
+                <td style="text-align:center;">${isEmployee ? '—' : `<button class="delete-btn" onclick="deleteRow(${index})">✕</button>`}</td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+        if (totalItemsSpan) totalItemsSpan.textContent = totalItems;
+        if (totalBuyingSpan) totalBuyingSpan.textContent = formatCurrency(totalBuying);
+        updateTotals();
+        rowCountSpan.textContent = `${items.length} items`;
+        autoSave();
+        updateDashboard();
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function updateField(index, field, value) {
+        if (currentUser?.role === 'employee' && (field === 'qty' || field === 'price' || field === 'cost')) {
+            showToast('Employees cannot modify inventory data', 'error');
+            return;
+        }
+        if (index >= 0 && index < items.length) {
+            items[index][field] = value;
+            if (field === 'qty' || field === 'price' || field === 'cost') {
+                const qty = parseFloat(items[index].qty) || 0;
+                const price = parseFloat(items[index].price) || 0;
+                const amount = qty * price;
+                const amountSpan = document.getElementById(`amount-${index}`);
+                if (amountSpan) amountSpan.textContent = formatCurrency(amount);
+            }
+            updateTotals();
+            autoSave();
+            updateDashboard();
+            document.querySelectorAll('.sale-item-select').forEach(sel => {
+                const currentVal = sel.value;
+                sel.innerHTML = '<option value="">Select from stock...</option>' + items.map(i => `<option value="${escapeHtml(i.commodity)}" ${i.commodity === currentVal ? 'selected' : ''}>${escapeHtml(i.commodity)}</option>`).join('');
+            });
+        }
+    }
+
+    function deleteRow(index) {
+        if (currentUser?.role === 'employee') { showToast('Employees cannot delete items', 'error'); return; }
+        if (items.length <= 1) { showToast('Cannot delete last row', 'error'); return; }
+        if (confirm(`Delete "${items[index].commodity || 'Item ' + (index+1)}"?`)) {
+            items.splice(index, 1);
+            renderTable();
+            showToast('Row deleted', 'success');
+        }
+    }
+
+    function addRow() {
+        if (currentUser?.role === 'employee') { showToast('Employees cannot add items', 'error'); return; }
+        items.push({ commodity: "", model: "", spec: "", qty: 1, price: 0, cost: 0 });
+        renderTable();
+        const wrapper = document.querySelector('.table-wrapper');
+        if (wrapper) wrapper.scrollTop = wrapper.scrollHeight;
+        showToast('New row added', 'success');
+    }
+
+    function clearAll() {
+        if (currentUser?.role === 'employee') { showToast('Employees cannot clear items', 'error'); return; }
+        if (items.length === 0) return;
+        if (confirm('Remove all items?')) {
+            items = [{ commodity: "", model: "", spec: "", qty: 1, price: 0, cost: 0 }];
+            renderTable();
+            showToast('All items cleared', 'success');
+        }
+    }
+
+    function loadSampleData() {
+        if (currentUser?.role === 'employee') { showToast('Employees cannot load sample data', 'error'); return; }
+        if (items.length > 0 && !confirm('Load sample data? Current data will be replaced.')) return;
+        items = JSON.parse(JSON.stringify(defaultItems));
+        shippingInput.value = '30000';
+        renderTable();
+        showToast('Sample data loaded', 'success');
+    }
+
+    function saveInventory() {
+        if (currentUser?.role !== 'admin') { showToast('Admin access required', 'error'); return; }
+        const doc = { 
+            id: 'inventory-' + Date.now(), 
+            type: 'inventory', 
+            content: JSON.stringify(items, null, 2),
+            date: new Date().toISOString(), 
+            name: 'Inventory Backup', 
+            createdBy: currentUser?.username || 'admin', 
+            timestamp: getFormattedDateTime().full,
+            itemCount: items.length
+        };
+        documents.push(doc);
+        localStorage.setItem('printercare_documents', JSON.stringify(documents));
+        refreshDocList();
+        showToast('Inventory saved to database!', 'success');
+        autoSave();
+    }
+
+    function updateTotals() {
+        let subtotal = 0, totalItems = 0, totalBuying = 0;
+        items.forEach(item => {
+            const qty = parseFloat(item.qty) || 0;
+            const price = parseFloat(item.price) || 0;
+            const cost = parseFloat(item.cost) || 0;
+            subtotal += qty * price;
+            totalBuying += qty * cost;
+            totalItems += qty;
+        });
+        const shipping = parseFloat(shippingInput.value) || 0;
+        const total = subtotal + shipping;
+        subtotalSpan.textContent = formatCurrency(subtotal);
+        grandTotalSpan.textContent = formatCurrency(total);
+        if (totalItemsSpan) totalItemsSpan.textContent = totalItems;
+        if (totalBuyingSpan) totalBuyingSpan.textContent = formatCurrency(totalBuying);
+    }
+
+    // ─── Sales Functions ──────────────────────────────────────────────────────
+    function addSale() {
+        const container = document.getElementById('salesList');
+        const div = document.createElement('div');
+        div.className = 'sales-entry';
+        const stockOptions = items.map(i => `<option value="${escapeHtml(i.commodity)}">${escapeHtml(i.commodity)}</option>`).join('');
+        div.innerHTML = `
+            <select class="sale-item-select" onchange="updateSalesSummary()">
+                <option value="">Select from stock...</option>
+                ${stockOptions}
+            </select>
+            <input type="text" placeholder="Or type new item..." class="sale-item" style="display:none;" onchange="updateSalesSummary()">
+            <input type="number" placeholder="Qty" class="sale-qty" value="1" min="1" oninput="updateSalesSummary()">
+            <input type="number" placeholder="Price" class="sale-price" step="100" oninput="updateSalesSummary()">
+            <input type="number" placeholder="Total" class="sale-total" step="100" readonly style="background:#f0f2f5; font-weight:600; text-align:right;">
+            ${currentUser?.role === 'employee' ? '' : `<button class="btn btn-danger btn-sm" onclick="removeSale(this)">✕</button>`}
+        `;
+        container.appendChild(div);
+        updateSalesSummary();
+        showToast('Sale added', 'success');
+    }
+
+    function removeSale(btn) {
+        if (currentUser?.role === 'employee') { showToast('Employees cannot remove sales', 'error'); return; }
+        const entry = btn.closest('.sales-entry');
+        if (document.querySelectorAll('.sales-entry').length <= 1) {
+            showToast('Cannot remove last sale', 'error');
+            return;
+        }
+        if (confirm('Remove this sale?')) {
+            entry.remove();
+            updateSalesSummary();
+            showToast('Sale removed', 'success');
+        }
+    }
+
+    function updateSalesSummary() {
+        const entries = document.querySelectorAll('.sales-entry');
+        let totalRevenue = 0, totalCosts = 0;
+        entries.forEach(entry => {
+            const select = entry.querySelector('.sale-item-select');
+            const manualInput = entry.querySelector('.sale-item');
+            let itemName = '';
+            if (select && select.value) {
+                itemName = select.value;
+                if (manualInput) manualInput.style.display = 'none';
+            } else if (manualInput && manualInput.value) {
+                itemName = manualInput.value;
+            }
+            const qty = parseFloat(entry.querySelector('.sale-qty').value) || 0;
+            const price = parseFloat(entry.querySelector('.sale-price').value) || 0;
+            const total = qty * price;
+            totalRevenue += total;
+            const totalInput = entry.querySelector('.sale-total');
+            if (totalInput) totalInput.value = Math.round(total);
+            const invItem = items.find(i => i.commodity.toLowerCase() === itemName.toLowerCase());
+            if (invItem) {
+                const cost = parseFloat(invItem.cost) || (parseFloat(invItem.price) * 0.6);
+                totalCosts += qty * cost;
+            }
+        });
+        const grossProfit = totalRevenue - totalCosts;
+        const grossMargin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
+        const netProfit = grossProfit * 0.7;
+        const netMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+        document.getElementById('totalSales').textContent = formatCurrency(totalRevenue);
+        document.getElementById('totalCost').textContent = formatCurrency(totalCosts);
+        document.getElementById('grossProfit').textContent = formatCurrency(grossProfit);
+        const gm = document.getElementById('grossMargin');
+        gm.textContent = grossMargin.toFixed(1) + '%';
+        gm.className = 'change ' + (grossMargin >= 0 ? 'positive' : 'negative');
+        document.getElementById('netProfit').textContent = formatCurrency(netProfit);
+        const nm = document.getElementById('netMargin');
+        nm.textContent = netMargin.toFixed(1) + '%';
+        nm.className = 'change ' + (netMargin >= 0 ? 'positive' : 'negative');
+        document.getElementById('salesRevenue').textContent = formatCurrency(totalRevenue);
+        document.getElementById('salesCOGS').textContent = formatCurrency(totalCosts);
+        document.getElementById('salesNetProfit').textContent = formatCurrency(netProfit);
+        sales = [];
+        entries.forEach(entry => {
+            const select = entry.querySelector('.sale-item-select');
+            const manualInput = entry.querySelector('.sale-item');
+            let itemName = '';
+            if (select && select.value) {
+                itemName = select.value;
+            } else if (manualInput && manualInput.value) {
+                itemName = manualInput.value;
+            }
+            sales.push({
+                item: itemName,
+                qty: parseFloat(entry.querySelector('.sale-qty').value) || 0,
+                price: parseFloat(entry.querySelector('.sale-price').value) || 0,
+                total: parseFloat(entry.querySelector('.sale-total').value) || 0
+            });
+        });
+        autoSave();
+        updateDashboard();
+    }
+
+    function clearSales() {
+        if (currentUser?.role === 'employee') { showToast('Employees cannot clear sales', 'error'); return; }
+        if (sales.length === 0) return;
+        if (confirm('Clear all sales records?')) {
+            document.querySelectorAll('.sales-entry').forEach(e => e.remove());
+            addSale();
+            updateSalesSummary();
+            showToast('Sales cleared', 'success');
+        }
+    }
+
+    // ─── RECEIPT FUNCTIONS ──────────────────────────────────────────────────
+    function addReceiptItem(itemName, qty, price) {
+        const container = document.getElementById('receiptItemsContainer');
+        const div = document.createElement('div');
+        div.className = 'receipt-item-row';
+        div.innerHTML = `
+            <input type="text" placeholder="Item name" class="receipt-item-name" value="${escapeHtml(itemName || '')}" onchange="updateReceiptPreview()">
+            <input type="number" placeholder="Qty" class="receipt-item-qty" value="${qty || 1}" min="0" step="1" onchange="updateReceiptPreview()">
+            <input type="number" placeholder="Unit Price" class="receipt-item-price" value="${price || 0}" min="0" step="100" onchange="updateReceiptPreview()">
+            <input type="number" placeholder="Total" class="receipt-item-total" value="${(qty || 1) * (price || 0)}" readonly style="background:#f0f2f5; font-weight:600; text-align:right;">
+            <button class="btn btn-danger btn-sm" onclick="removeReceiptItem(this)">✕</button>
+        `;
+        container.appendChild(div);
+        updateReceiptPreview();
+        showToast('Receipt item added', 'success');
+    }
+
+    function removeReceiptItem(btn) {
+        const entry = btn.closest('.receipt-item-row');
+        if (document.querySelectorAll('.receipt-item-row').length <= 1) {
+            showToast('Cannot remove last item', 'error');
+            return;
+        }
+        if (confirm('Remove this item from receipt?')) {
+            entry.remove();
+            updateReceiptPreview();
+            showToast('Item removed from receipt', 'success');
+        }
+    }
+
+    function clearReceiptItems() {
+        if (document.querySelectorAll('.receipt-item-row').length === 0) return;
+        if (confirm('Clear all receipt items?')) {
+            document.getElementById('receiptItemsContainer').innerHTML = '';
+            addReceiptItem('', 1, 0);
+            updateReceiptPreview();
+            showToast('Receipt items cleared', 'success');
+        }
+    }
+
+    function updateReceiptPreview() {
+        const rows = document.querySelectorAll('.receipt-item-row');
+        let html = '', subtotal = 0;
+        
+        rows.forEach(row => {
+            const name = row.querySelector('.receipt-item-name').value || 'Unnamed';
+            const qty = parseFloat(row.querySelector('.receipt-item-qty').value) || 0;
+            const price = parseFloat(row.querySelector('.receipt-item-price').value) || 0;
+            const total = qty * price;
+            subtotal += total;
+            const totalInput = row.querySelector('.receipt-item-total');
+            if (totalInput) totalInput.value = Math.round(total);
+            
+            if (qty > 0 && price > 0) {
+                html += `<tr>
+                    <td>${escapeHtml(name)}</td>
+                    <td>${qty}</td>
+                    <td style="text-align:right;">${formatCurrency(price)}</td>
+                    <td style="text-align:right;">${formatCurrency(total)}</td>
+                </tr>`;
+            }
+        });
+        
+        document.getElementById('receiptTableBody').innerHTML = html || '<tr><td colspan="4" style="text-align:center; color:#6b7a8a;">No items added yet</td></tr>';
+        document.getElementById('receiptSubtotal').textContent = formatCurrency(subtotal);
+        document.getElementById('receiptTotal').textContent = formatCurrency(subtotal);
+        
+        const receiptNum = document.getElementById('receiptNumber').value || 'RCT-001';
+        const client = document.getElementById('receiptClient').value || 'Walk-in Customer';
+        const payment = document.getElementById('paymentMethod').value || 'Cash';
+        const dt = getFormattedDateTime();
+        
+        document.getElementById('docReceiptNumber').textContent = receiptNum;
+        document.getElementById('docReceiptDate').textContent = dt.date;
+        document.getElementById('docReceiptClient').textContent = client;
+        document.getElementById('docPaymentMethod').textContent = payment;
+        document.getElementById('recDateTime').textContent = `Generated: ${dt.full}`;
+        
+        receiptItems = [];
+        rows.forEach(row => {
+            receiptItems.push({
+                name: row.querySelector('.receipt-item-name').value,
+                qty: parseFloat(row.querySelector('.receipt-item-qty').value) || 0,
+                price: parseFloat(row.querySelector('.receipt-item-price').value) || 0,
+                total: parseFloat(row.querySelector('.receipt-item-total').value) || 0
+            });
+        });
+    }
+
+    function generateReceipt() {
+        updateReceiptPreview();
+        document.getElementById('recCompanyName').textContent = companyConfig.name.toUpperCase();
+        document.getElementById('recCompanyInfo').textContent = `📞 ${companyConfig.phone} · 📧 ${companyConfig.email}`;
+        document.getElementById('recCompanyAddress').textContent = `📍 ${companyConfig.address}`;
+        document.getElementById('recFooter').textContent = `📞 ${companyConfig.phone} · 📧 ${companyConfig.email}`;
+        document.getElementById('receiptCreator').textContent = currentUser?.username || 'admin';
+        showToast('Receipt generated', 'success');
+    }
+
+    // ─── INVOICE FUNCTIONS ──────────────────────────────────────────────────
+    function generateInvoice() {
+        const invNum = document.getElementById('invoiceNumber').value || 'INV-001';
+        const client = document.getElementById('clientName').value || 'Walk-in Customer';
+        const dt = getFormattedDateTime();
+        document.getElementById('docInvoiceNumber').textContent = invNum;
+        document.getElementById('docDate').textContent = dt.date;
+        document.getElementById('docClient').textContent = client;
+        document.getElementById('invoiceCreator').textContent = currentUser?.username || 'admin';
+        document.getElementById('invDateTime').textContent = `Generated: ${dt.full}`;
+        
+        let html = '', subtotal = 0;
+        const rows = document.querySelectorAll('.receipt-item-row');
+        rows.forEach(row => {
+            const name = row.querySelector('.receipt-item-name').value || 'Unnamed';
+            const qty = parseFloat(row.querySelector('.receipt-item-qty').value) || 0;
+            const price = parseFloat(row.querySelector('.receipt-item-price').value) || 0;
+            const total = qty * price;
+            subtotal += total;
+            if (qty > 0 && price > 0) {
+                html += `<tr><td>${escapeHtml(name)}</td><td>—</td><td>${qty}</td><td style="text-align:right;">${formatCurrency(price)}</td><td style="text-align:right;">${formatCurrency(total)}</td></tr>`;
+            }
+        });
+        document.getElementById('invoiceTableBody').innerHTML = html || '<tr><td colspan="5" style="text-align:center; color:#6b7a8a;">No items to invoice</td></tr>';
+        const shipping = parseFloat(shippingInput.value) || 0;
+        document.getElementById('invoiceSubtotal').textContent = formatCurrency(subtotal);
+        document.getElementById('invoiceShipping').textContent = formatCurrency(shipping);
+        document.getElementById('invoiceTotal').textContent = formatCurrency(subtotal + shipping);
+        document.getElementById('invCompanyName').textContent = companyConfig.name.toUpperCase();
+        document.getElementById('invCompanyInfo').textContent = `📞 ${companyConfig.phone} · 📧 ${companyConfig.email}`;
+        document.getElementById('invFooter').textContent = `📞 ${companyConfig.phone} · 📧 ${companyConfig.email}`;
+    }
+
+    // ─── BALANCE SHEET ──────────────────────────────────────────────────────
+    function generateBalanceSheet() {
+        const dt = getFormattedDateTime();
+        document.getElementById('balanceDate').textContent = dt.date;
+        document.getElementById('balanceCreator').textContent = currentUser?.username || 'admin';
+        document.getElementById('balDateTime').textContent = `Generated: ${dt.full}`;
+        let inventoryValue = 0;
+        items.forEach(item => { inventoryValue += (parseFloat(item.qty) || 0) * (parseFloat(item.price) || 0); });
+        let totalSales = 0;
+        document.querySelectorAll('.sales-entry').forEach(entry => {
+            totalSales += parseFloat(entry.querySelector('.sale-total').value) || 0;
+        });
+        const cash = 18900000 + totalSales * 0.3;
+        const receivable = 7560000 + totalSales * 0.2;
+        const payable = 5670000 + totalSales * 0.1;
+        const equity = 30240000 + totalSales * 0.5;
+        const retained = 4536000 + totalSales * 0.2;
+        const totalAssets = inventoryValue + cash + receivable;
+        const totalLiabilities = payable + equity + retained;
+        document.getElementById('balanceInventory').textContent = formatCurrency(inventoryValue);
+        document.getElementById('balanceCash').textContent = formatCurrency(cash);
+        document.getElementById('balanceReceivable').textContent = formatCurrency(receivable);
+        document.getElementById('balanceTotalAssets').textContent = formatCurrency(totalAssets);
+        document.getElementById('balancePayable').textContent = formatCurrency(payable);
+        document.getElementById('balanceEquity').textContent = formatCurrency(equity);
+        document.getElementById('balanceRetained').textContent = formatCurrency(retained);
+        document.getElementById('balanceTotalLiabilities').textContent = formatCurrency(totalLiabilities);
+        document.getElementById('balCompanyName').textContent = companyConfig.name.toUpperCase();
+        document.getElementById('balCompanyInfo').textContent = `📞 ${companyConfig.phone} · 📧 ${companyConfig.email}`;
+        document.getElementById('balFooter').textContent = `📞 ${companyConfig.phone} · 📧 ${companyConfig.email}`;
+    }
+
+    // ─── PROFIT & LOSS ──────────────────────────────────────────────────────
+    function generateProfitLoss() {
+        const now = new Date();
+        const period = document.getElementById('profitPeriod').value || '2026-07';
+        const [year, month] = period.split('-');
+        const start = `${year}-${month}-01`;
+        const end = new Date(year, month, 0).toISOString().split('T')[0];
+        document.getElementById('plPeriod').textContent = `${start} to ${end}`;
+        document.getElementById('plCreator').textContent = currentUser?.username || 'admin';
+        const dt = getFormattedDateTime();
+        document.getElementById('plDateTime').textContent = `Generated: ${dt.full}`;
+        let inventoryValue = 0;
+        items.forEach(item => { inventoryValue += (parseFloat(item.qty) || 0) * (parseFloat(item.price) || 0); });
+        let totalSales = 0, totalCOGS = 0;
+        document.querySelectorAll('.sales-entry').forEach(entry => {
+            const select = entry.querySelector('.sale-item-select');
+            const manualInput = entry.querySelector('.sale-item');
+            let itemName = '';
+            if (select && select.value) itemName = select.value;
+            else if (manualInput && manualInput.value) itemName = manualInput.value;
+            const qty = parseFloat(entry.querySelector('.sale-qty').value) || 0;
+            const price = parseFloat(entry.querySelector('.sale-price').value) || 0;
+            totalSales += qty * price;
+            const invItem = items.find(i => i.commodity.toLowerCase() === itemName.toLowerCase());
+            if (invItem) {
+                const cost = parseFloat(invItem.cost) || (parseFloat(invItem.price) * 0.6);
+                totalCOGS += qty * cost;
+            }
+        });
+        const salesRevenue = totalSales * 0.7;
+        const serviceRevenue = totalSales * 0.3;
+        const totalRevenue = salesRevenue + serviceRevenue;
+        const cogs = totalCOGS || inventoryValue * 0.4;
+        const operating = inventoryValue * 0.15 + totalSales * 0.1;
+        const totalExpenses = cogs + operating;
+        const net = totalRevenue - totalExpenses;
+        document.getElementById('plRevenue').textContent = formatCurrency(totalRevenue);
+        document.getElementById('plSales').textContent = formatCurrency(salesRevenue);
+        document.getElementById('plService').textContent = formatCurrency(serviceRevenue);
+        document.getElementById('plTotalRevenue').textContent = formatCurrency(totalRevenue);
+        document.getElementById('plCOGS').textContent = formatCurrency(cogs);
+        document.getElementById('plOperating').textContent = formatCurrency(operating);
+        document.getElementById('plTotalExpenses').textContent = formatCurrency(totalExpenses);
+        document.getElementById('plNet').textContent = formatCurrency(net);
+        document.getElementById('plCompanyName').textContent = companyConfig.name.toUpperCase();
+        document.getElementById('plCompanyInfo').textContent = `📞 ${companyConfig.phone} · 📧 ${companyConfig.email}`;
+        document.getElementById('plFooter').textContent = `📞 ${companyConfig.phone} · 📧 ${companyConfig.email}`;
+    }
+
+    // ─── STATEMENT ──────────────────────────────────────────────────────────
+    function generateStatement() {
+        const client = document.getElementById('statementClient').value || 'Walk-in Customer';
+        document.getElementById('docStatementClient').textContent = client;
+        document.getElementById('statementCreator').textContent = currentUser?.username || 'admin';
+        const dt = getFormattedDateTime();
+        document.getElementById('staDateTime').textContent = `Generated: ${dt.full}`;
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        const end = now.toISOString().split('T')[0];
+        document.getElementById('statementPeriod').textContent = `${start} to ${end}`;
+        let html = '', balance = 3780000, debits = 0, credits = 0;
+        const saleEntries = document.querySelectorAll('.sales-entry');
+        saleEntries.forEach((entry, i) => {
+            const select = entry.querySelector('.sale-item-select');
+            const manualInput = entry.querySelector('.sale-item');
+            let itemName = '';
+            if (select && select.value) itemName = select.value;
+            else if (manualInput && manualInput.value) itemName = manualInput.value;
+            const qty = parseFloat(entry.querySelector('.sale-qty').value) || 0;
+            const price = parseFloat(entry.querySelector('.sale-price').value) || 0;
+            const total = qty * price;
+            if (total > 0) {
+                const date = new Date(now.getTime() - i * 86400000).toISOString().split('T')[0];
+                const invNum = `INV-${String(i+1).padStart(3, '0')}`;
+                const desc = escapeHtml(itemName || 'Item') + ' x' + qty;
+                const debit = total * 0.6;
+                const credit = total - debit;
+                debits += debit; credits += credit;
+                balance += debit - credit;
+                html += `<tr><td>${date}</td><td>${invNum}</td><td>${desc}</td><td style="text-align:right;">${formatCurrency(debit)}</td><td style="text-align:right;">${formatCurrency(credit)}</td><td style="text-align:right;">${formatCurrency(balance)}</td></tr>`;
+            }
+        });
+        document.getElementById('statementTableBody').innerHTML = html || '<tr><td colspan="6" style="text-align:center; color:#6b7a8a;">No transactions</td></tr>';
+        document.getElementById('statementOpening').textContent = formatCurrency(3780000);
+        document.getElementById('statementDebits').textContent = formatCurrency(debits);
+        document.getElementById('statementCredits').textContent = formatCurrency(credits);
+        document.getElementById('statementClosing').textContent = formatCurrency(balance);
+        document.getElementById('staCompanyName').textContent = companyConfig.name.toUpperCase();
+        document.getElementById('staCompanyInfo').textContent = `📞 ${companyConfig.phone} · 📧 ${companyConfig.email}`;
+        document.getElementById('staFooter').textContent = `📞 ${companyConfig.phone} · 📧 ${companyConfig.email}`;
+    }
+
+    // ─── SHARE DOCUMENT FUNCTION ──────────────────────────────────────────
+    let shareDocType = '';
+    
+    function shareDocument(type) {
+        shareDocType = type;
+        document.getElementById('shareDocType').value = type.charAt(0).toUpperCase() + type.slice(1) + ' Document';
+        
+        // Auto-fill client email from current form if available
+        const clientEmail = document.getElementById('clientEmail')?.value || 
+                           document.getElementById('receiptClientEmail')?.value || 
+                           document.getElementById('statementClientEmail')?.value || '';
+        const clientName = document.getElementById('clientName')?.value || 
+                          document.getElementById('receiptClient')?.value || 
+                          document.getElementById('statementClient')?.value || '';
+        
+        document.getElementById('shareClientEmail').value = clientEmail;
+        document.getElementById('shareClientName').value = clientName;
+        document.getElementById('shareMessage').value = `Please find attached the ${type} document from ${companyConfig.name}.`;
+        document.getElementById('shareMsg').style.display = 'none';
+        document.getElementById('shareModal').classList.add('active');
+    }
+
+    function closeShareModal() { document.getElementById('shareModal').classList.remove('active'); }
+
+    function sendSharedDocument() {
+        const email = document.getElementById('shareClientEmail').value.trim();
+        const name = document.getElementById('shareClientName').value.trim() || 'Client';
+        const message = document.getElementById('shareMessage').value || '';
+        
+        if (!email) {
+            const msg = document.getElementById('shareMsg');
+            msg.textContent = '❌ Please enter a client email address';
+            msg.style.color = '#dc3545';
+            msg.style.display = 'block';
+            return;
+        }
+        
+        // Get document content
+        const contentEl = document.getElementById(shareDocType + 'Content');
+        if (!contentEl) {
+            showToast('Document not found', 'error');
+            return;
+        }
+        
+        const dt = getFormattedDateTime();
+        const docContent = contentEl.innerHTML;
+        const subject = `${companyConfig.name} - ${shareDocType.toUpperCase()} Document`;
+        
+        const emailBody = `
+            <html>
+                <head><style>body{font-family:Arial;padding:20px;}</style></head>
+                <body>
+                    <h2>${companyConfig.name}</h2>
+                    <p>Dear ${escapeHtml(name)},</p>
+                    <p>${escapeHtml(message)}</p>
+                    <hr>
+                    ${docContent}
+                    <hr>
+                    <p style="color:#4a5a6a; font-size:12px; margin-top:20px; border-top:1px solid #ddd; padding-top:10px;">
+                        This document was sent automatically from ${companyConfig.name} Business Management System.<br>
+                        📞 ${companyConfig.phone} · 📧 ${companyConfig.email}<br>
+                        📍 ${companyConfig.address}<br>
+                        📅 ${dt.full}
+                    </p>
+                </body>
+            </html>
+        `;
+        
+        const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
+        window.open(mailtoLink, '_blank');
+        
+        const msg = document.getElementById('shareMsg');
+        msg.textContent = `✅ Email opened for ${email}. Please send the document.`;
+        msg.style.color = '#28a745';
+        msg.style.display = 'block';
+        showToast(`Email prepared for ${email}`, 'success');
+        
+        setTimeout(() => { closeShareModal(); }, 3000);
+    }
+
+    // ─── AUTO SAVE & LOAD ──────────────────────────────────────────────────
+    function autoSave() {
+        try {
+            const salesData = [];
+            document.querySelectorAll('.sales-entry').forEach(entry => {
+                const select = entry.querySelector('.sale-item-select');
+                const manualInput = entry.querySelector('.sale-item');
+                let itemName = '';
+                if (select && select.value) itemName = select.value;
+                else if (manualInput && manualInput.value) itemName = manualInput.value;
+                salesData.push({
+                    item: itemName,
+                    qty: parseFloat(entry.querySelector('.sale-qty').value) || 0,
+                    price: parseFloat(entry.querySelector('.sale-price').value) || 0,
+                    total: parseFloat(entry.querySelector('.sale-total').value) || 0
+                });
+            });
+            const costData = [];
+            document.querySelectorAll('.cost-entry').forEach(entry => {
+                costData.push({
+                    item: entry.querySelector('.cost-item').value,
+                    buy: parseFloat(entry.querySelector('.cost-buy').value) || 0,
+                    sell: parseFloat(entry.querySelector('.cost-sell').value) || 0,
+                    qty: parseFloat(entry.querySelector('.cost-qty').value) || 0,
+                    profit: parseFloat(entry.querySelector('.cost-profit').value) || 0
+                });
+            });
+            const receiptData = [];
+            document.querySelectorAll('.receipt-item-row').forEach(row => {
+                receiptData.push({
+                    name: row.querySelector('.receipt-item-name').value,
+                    qty: parseFloat(row.querySelector('.receipt-item-qty').value) || 0,
+                    price: parseFloat(row.querySelector('.receipt-item-price').value) || 0,
+                    total: parseFloat(row.querySelector('.receipt-item-total').value) || 0
+                });
+            });
+            const data = { 
+                items: items, 
+                shipping: shippingInput.value, 
+                sales: salesData, 
+                documents: documents,
+                costs: costData,
+                receiptItems: receiptData,
+                receiptNumber: document.getElementById('receiptNumber').value,
+                receiptClient: document.getElementById('receiptClient').value,
+                paymentMethod: document.getElementById('paymentMethod').value,
+                invoiceNumber: document.getElementById('invoiceNumber').value,
+                clientName: document.getElementById('clientName').value,
+                clientEmail: document.getElementById('clientEmail').value,
+                currency: currentCurrency,
+                timestamp: new Date().toISOString() 
+            };
+            localStorage.setItem('printercare_data', JSON.stringify(data));
+        } catch(e) { /* ignore */ }
+    }
+
+    function saveData() { autoSave(); showToast('Data saved to browser!', 'success'); }
+
+    function loadData() {
+        try {
+            const raw = localStorage.getItem('printercare_data');
+            if (!raw) { showToast('No saved data found', 'error'); return; }
+            const data = JSON.parse(raw);
+            items = data.items || [];
+            if (data.shipping) shippingInput.value = data.shipping;
+            if (data.sales) sales = data.sales;
+            if (data.documents) documents = data.documents;
+            if (data.costs) costs = data.costs;
+            if (data.receiptItems) {
+                receiptItems = data.receiptItems;
+                document.getElementById('receiptItemsContainer').innerHTML = '';
+                receiptItems.forEach(item => {
+                    addReceiptItem(item.name, item.qty, item.price);
+                });
+            }
+            if (data.receiptNumber) document.getElementById('receiptNumber').value = data.receiptNumber;
+            if (data.receiptClient) document.getElementById('receiptClient').value = data.receiptClient;
+            if (data.paymentMethod) document.getElementById('paymentMethod').value = data.paymentMethod;
+            if (data.invoiceNumber) document.getElementById('invoiceNumber').value = data.invoiceNumber;
+            if (data.clientName) document.getElementById('clientName').value = data.clientName;
+            if (data.clientEmail) document.getElementById('clientEmail').value = data.clientEmail;
+            if (data.currency) {
+                currentCurrency = data.currency;
+                document.getElementById('headerCurrency').value = currentCurrency;
+                document.getElementById('footerCurrency').textContent = `💰 ${currentCurrency}`;
+            }
+            renderTable();
+            renderSales();
+            loadCosts();
+            refreshDocList();
+            updateSysInfo();
+            generateReceipt();
+            showToast('Data loaded successfully!', 'success');
+        } catch(e) { showToast('Error loading data', 'error'); }
+    }
+
+    function renderSales() {
+        const container = document.getElementById('salesList');
+        container.innerHTML = '';
+        if (sales.length === 0) { addSale(); return; }
+        const stockOptions = items.map(i => `<option value="${escapeHtml(i.commodity)}">${escapeHtml(i.commodity)}</option>`).join('');
+        sales.forEach(sale => {
+            const div = document.createElement('div');
+            div.className = 'sales-entry';
+            div.innerHTML = `
+                <select class="sale-item-select" onchange="updateSalesSummary()">
+                    <option value="">Select from stock...</option>
+                    ${stockOptions}
+                    <option value="${escapeHtml(sale.item || '')}" selected>${escapeHtml(sale.item || '')}</option>
+                </select>
+                <input type="text" placeholder="Or type new item..." class="sale-item" style="display:none;" onchange="updateSalesSummary()">
+                <input type="number" placeholder="Qty" class="sale-qty" value="${sale.qty || 1}" min="1" oninput="updateSalesSummary()">
+                <input type="number" placeholder="Price" class="sale-price" value="${sale.price || 0}" step="100" oninput="updateSalesSummary()">
+                <input type="number" placeholder="Total" class="sale-total" value="${Math.round(sale.qty * sale.price)}" step="100" readonly style="background:#f0f2f5; font-weight:600; text-align:right;">
+                ${currentUser?.role === 'employee' ? '' : `<button class="btn btn-danger btn-sm" onclick="removeSale(this)">✕</button>`}
+            `;
+            container.appendChild(div);
+        });
+        updateSalesSummary();
+    }
+
+    // ─── DOCUMENT MANAGEMENT ──────────────────────────────────────────────
+    function saveDocument(type) {
+        if (currentUser?.role !== 'admin') { showToast('Only Admin can save documents', 'error'); return; }
+        const content = document.getElementById(type + 'Content');
+        if (!content) return;
+        const creatorSpan = document.getElementById(type + 'Creator');
+        if (creatorSpan) creatorSpan.textContent = currentUser?.username || 'admin';
+        const dt = getFormattedDateTime();
+        const doc = { 
+            id: type + '-' + Date.now(), 
+            type: type, 
+            content: content.innerHTML, 
+            date: new Date().toISOString(), 
+            name: type.charAt(0).toUpperCase() + type.slice(1), 
+            createdBy: currentUser?.username || 'admin', 
+            timestamp: dt.full 
+        };
+        documents.push(doc);
+        localStorage.setItem('printercare_documents', JSON.stringify(documents));
+        refreshDocList();
+        showToast(`${doc.name} saved to database!`, 'success');
+        autoSave();
+    }
+
+    function refreshDocList() {
+        const container = document.getElementById('docList');
+        const raw = localStorage.getItem('printercare_documents');
+        if (raw) { try { documents = JSON.parse(raw); } catch(e) { documents = []; } }
+        document.getElementById('docCount').textContent = `${documents.length} documents`;
+        if (documents.length === 0) { container.innerHTML = '<div style="text-align:center; padding:40px; color:#6b7a8a;">No documents saved yet.</div>'; return; }
+        let html = '';
+        documents.slice().reverse().forEach((doc, index) => {
+            const realIndex = documents.length - 1 - index;
+            const isInventory = doc.type === 'inventory';
+            html += `<div class="doc-list-item"><div class="doc-info">
+                <span class="doc-type">${isInventory ? '📦 ' : ''}${doc.name}</span>
+                <span class="doc-date">${new Date(doc.date).toLocaleString()}</span>
+                <span class="doc-creator">${doc.createdBy || 'admin'}</span>
+                ${isInventory ? `<span class="doc-creator" style="background:#d4edda; color:#155724;">${doc.itemCount || 0} items</span>` : ''}
+            </div><div class="doc-actions">
+                <button class="btn btn-info btn-sm" onclick="viewDoc(${realIndex})">View</button>
+                <button class="btn btn-success btn-sm" onclick="shareSavedDoc(${realIndex})">📧 Share</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteDoc(${realIndex})">Delete</button>
+            </div></div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    function viewDoc(index) {
+        const doc = documents[index];
+        if (!doc) return;
+        const win = window.open('', '_blank', 'width=800,height=600');
+        win.document.write(`<html><head><title>${doc.name} - ${companyConfig.name}</title><style>body{font-family:Arial;padding:30px;color:#1a2a3a;}</style></head><body>${doc.content}</body></html>`);
+        win.document.close();
+    }
+
+    function shareSavedDoc(index) {
+        const doc = documents[index];
+        if (!doc) return;
+        shareDocType = doc.type;
+        document.getElementById('shareDocType').value = doc.name + ' (Saved)';
+        document.getElementById('shareClientEmail').value = '';
+        document.getElementById('shareClientName').value = '';
+        document.getElementById('shareMessage').value = `Please find attached the ${doc.name} document from ${companyConfig.name}.`;
+        document.getElementById('shareMsg').style.display = 'none';
+        document.getElementById('shareModal').classList.add('active');
+        
+        // Override send function for saved docs
+        window._savedDocContent = doc.content;
+        window._savedDocName = doc.name;
+    }
+
+    function deleteDoc(index) {
+        if (currentUser?.role !== 'admin') { showToast('Only Admin can delete documents', 'error'); return; }
+        if (confirm('Delete this document?')) {
+            documents.splice(index, 1);
+            localStorage.setItem('printercare_documents', JSON.stringify(documents));
+            refreshDocList();
+            showToast('Document deleted', 'success');
+        }
+    }
+
+    function clearAllDocs() {
+        if (currentUser?.role !== 'admin') { showToast('Only Admin can clear documents', 'error'); return; }
+        if (documents.length === 0) return;
+        if (confirm('Delete all saved documents?')) {
+            documents = [];
+            localStorage.setItem('printercare_documents', JSON.stringify(documents));
+            refreshDocList();
+            showToast('All documents cleared', 'success');
+        }
+    }
+
+    // Override sendSharedDocument for saved docs
+    const originalSendSharedDocument = sendSharedDocument;
+    sendSharedDocument = function() {
+        const email = document.getElementById('shareClientEmail').value.trim();
+        const name = document.getElementById('shareClientName').value.trim() || 'Client';
+        const message = document.getElementById('shareMessage').value || '';
+        
+        if (!email) {
+            const msg = document.getElementById('shareMsg');
+            msg.textContent = '❌ Please enter a client email address';
+            msg.style.color = '#dc3545';
+            msg.style.display = 'block';
+            return;
+        }
+        
+        let docContent = '';
+        let docName = shareDocType.charAt(0).toUpperCase() + shareDocType.slice(1);
+        
+        // Check if it's a saved doc
+        if (window._savedDocContent) {
+            docContent = window._savedDocContent;
+            docName = window._savedDocName || docName;
+            window._savedDocContent = null;
+            window._savedDocName = null;
+        } else {
+            const contentEl = document.getElementById(shareDocType + 'Content');
+            if (contentEl) docContent = contentEl.innerHTML;
+            else {
+                showToast('Document not found', 'error');
+                return;
+            }
+        }
+        
+        const dt = getFormattedDateTime();
+        const subject = `${companyConfig.name} - ${docName}`;
+        
+        const emailBody = `
+            <html>
+                <head><style>body{font-family:Arial;padding:20px;}</style></head>
+                <body>
+                    <h2>${companyConfig.name}</h2>
+                    <p>Dear ${escapeHtml(name)},</p>
+                    <p>${escapeHtml(message)}</p>
+                    <hr>
+                    ${docContent}
+                    <hr>
+                    <p style="color:#4a5a6a; font-size:12px; margin-top:20px; border-top:1px solid #ddd; padding-top:10px;">
+                        This document was sent automatically from ${companyConfig.name} Business Management System.<br>
+                        📞 ${companyConfig.phone} · 📧 ${companyConfig.email}<br>
+                        📍 ${companyConfig.address}<br>
+                        📅 ${dt.full}
+                    </p>
+                </body>
+            </html>
+        `;
+        
+        const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
+        window.open(mailtoLink, '_blank');
+        
+        const msg = document.getElementById('shareMsg');
+        msg.textContent = `✅ Email opened for ${email}. Please send the document.`;
+        msg.style.color = '#28a745';
+        msg.style.display = 'block';
+        showToast(`Email prepared for ${email}`, 'success');
+        
+        setTimeout(() => { closeShareModal(); }, 3000);
+    };
+
+    // ─── PRINT FUNCTION ────────────────────────────────────────────────────
+    function printDocument(tabId) {
+        const content = document.getElementById(tabId + 'Content');
+        if (!content) return;
+        const printWin = window.open('', '_blank', 'width=800,height=600');
+        printWin.document.write(`<!DOCTYPE html>
+<html>
+<head>
+    <title>${companyConfig.name} - ${tabId.toUpperCase()}</title>
+    <style>
+        * { color: #000 !important; background: #fff !important; border-color: #000 !important; }
+        body { font-family: Arial, sans-serif; padding: 40px; margin: 0; }
+        .doc-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
+        .doc-header h2 { font-size: 22px; margin: 0; }
+        .company-info { font-size: 12px; color: #000; }
+        .doc-datetime { font-size: 11px; color: #000; margin-top: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th, td { border: 1px solid #000; padding: 8px 12px; text-align: left; }
+        th { background: #f0f0f0; font-weight: bold; }
+        td:last-child, th:last-child { text-align: right; }
+        .doc-total { text-align: right; margin-top: 18px; padding-top: 14px; border-top: 2px solid #000; }
+        .doc-total p { margin: 4px 0; }
+        .doc-footer { margin-top: 24px; padding-top: 14px; border-top: 1px solid #000; font-size: 12px; text-align: center; }
+        .signature-area { display: flex; justify-content: space-between; margin-top: 24px; padding-top: 18px; border-top: 1px solid #000; }
+        .sig-block { text-align: center; min-width: 160px; }
+        .sig-line { width: 160px; border-bottom: 2px solid #000; margin: 6px auto; }
+        .sig-label { font-size: 11px; color: #000; }
+        .doc-creator { font-size: 11px; color: #000; text-align: right; margin-top: 10px; font-style: italic; }
+        .no-print { display: none !important; }
+        @page { margin: 20mm; }
+    </style>
+</head>
+<body>
+    ${content.innerHTML}
+</body>
+</html>`);
+        printWin.document.close();
+        setTimeout(() => { printWin.print(); }, 500);
+    }
+
+    // ─── SYSTEM INFO ──────────────────────────────────────────────────────
+    function updateSysInfo() {
+        document.getElementById('sysUsers').textContent = users.length;
+        document.getElementById('sysDocs').textContent = documents.length;
+        document.getElementById('sysItems').textContent = items.length;
+        document.getElementById('sysSales').textContent = document.querySelectorAll('.sales-entry').length;
+    }
+
+    function updateDocCreators() {
+        const creator = currentUser?.username || 'admin';
+        ['invoiceCreator', 'receiptCreator', 'balanceCreator', 'statementCreator', 'plCreator'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = creator;
+        });
+    }
+
+    // ─── TAB SWITCHING ────────────────────────────────────────────────────
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tabId = this.dataset.tab;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            this.classList.add('active');
+            if (tabId === 'invoice') generateInvoice();
+            else if (tabId === 'receipt') generateReceipt();
+            else if (tabId === 'balance') generateBalanceSheet();
+            else if (tabId === 'profitloss') generateProfitLoss();
+            else if (tabId === 'statement') generateStatement();
+            else if (tabId === 'sales') updateSalesSummary();
+            else if (tabId === 'documents') refreshDocList();
+            else if (tabId === 'costs') updateCostSummary();
+            else if (tabId === 'dashboard') { updateDashboard(); }
+            else if (tabId === 'admin') { renderUsers(); updateSysInfo(); updateActiveSessions(); }
+        });
+    });
+
+    // ─── INIT APP ──────────────────────────────────────────────────────────
+    function initApp() {
+        const docRaw = localStorage.getItem('printercare_documents');
+        if (docRaw) { try { documents = JSON.parse(docRaw); } catch(e) { documents = []; } }
+        const raw = localStorage.getItem('printercare_data');
+        if (raw) {
+            try {
+                const data = JSON.parse(raw);
+                items = data.items || defaultItems;
+                if (data.shipping) shippingInput.value = data.shipping;
+                if (data.sales) sales = data.sales;
+                if (data.documents) documents = data.documents;
+                if (data.costs) costs = data.costs;
+                if (data.receiptItems) {
+                    receiptItems = data.receiptItems;
+                    document.getElementById('receiptItemsContainer').innerHTML = '';
+                    if (receiptItems.length === 0) {
+                        addReceiptItem('', 1, 0);
+                    } else {
+                        receiptItems.forEach(item => {
+                            addReceiptItem(item.name, item.qty, item.price);
+                        });
+                    }
+                }
+                if (data.receiptNumber) document.getElementById('receiptNumber').value = data.receiptNumber;
+                if (data.receiptClient) document.getElementById('receiptClient').value = data.receiptClient;
+                if (data.paymentMethod) document.getElementById('paymentMethod').value = data.paymentMethod;
+                if (data.invoiceNumber) document.getElementById('invoiceNumber').value = data.invoiceNumber;
+                if (data.clientName) document.getElementById('clientName').value = data.clientName;
+                if (data.clientEmail) document.getElementById('clientEmail').value = data.clientEmail;
+                if (data.currency) {
+                    currentCurrency = data.currency;
+                    document.getElementById('headerCurrency').value = currentCurrency;
+                    document.getElementById('footerCurrency').textContent = `💰 ${currentCurrency}`;
+                }
+            } catch(e) { items = JSON.parse(JSON.stringify(defaultItems)); }
+        } else { 
+            items = JSON.parse(JSON.stringify(defaultItems));
+            setTimeout(() => {
+                document.getElementById('receiptItemsContainer').innerHTML = '';
+                addReceiptItem('', 1, 0);
+            }, 100);
+        }
+        renderTable();
+        renderSales();
+        loadCosts();
+        refreshDocList();
+        renderUsers();
+        updateSysInfo();
+        updateActiveSessions();
+        updateDocCreators();
+        updateDateTimeDisplay();
+        updateOnlineStatus();
+        setTimeout(() => {
+            generateInvoice();
+            generateReceipt();
+            generateBalanceSheet();
+            generateProfitLoss();
+            generateStatement();
+        }, 200);
+        showToast(`${companyConfig.name} ready!`, 'success');
+    }
+
+    // ─── EXPOSE FUNCTIONS ──────────────────────────────────────────────────
+    window.login = login; window.logout = logout; window.addUser = addUser; window.deleteUser = deleteUser;
+    window.editUser = editUser; window.saveUserEdit = saveUserEdit; window.closeEditUserModal = closeEditUserModal;
+    window.showResetPassword = showResetPassword; window.closeResetModal = closeResetModal;
+    window.sendResetCode = sendResetCode; window.confirmResetCode = confirmResetCode;
+    window.showChangePassword = showChangePassword; window.closeChangePassModal = closeChangePassModal;
+    window.changePasswordLogin = changePasswordLogin;
+    window.openEditCompany = openEditCompany; window.closeEditCompanyModal = closeEditCompanyModal;
+    window.saveCompanyDetails = saveCompanyDetails;
+    window.addRow = addRow; window.deleteRow = deleteRow; window.clearAll = clearAll;
+    window.loadSampleData = loadSampleData; window.updateField = updateField;
+    window.addSale = addSale; window.removeSale = removeSale; window.updateSalesSummary = updateSalesSummary;
+    window.clearSales = clearSales; window.saveData = saveData; window.loadData = loadData;
+    window.updateTotals = updateTotals;
+    window.addCostRow = addCostRow; window.removeCostRow = removeCostRow; window.updateCostSummary = updateCostSummary;
+    window.clearCosts = clearCosts; window.loadCosts = loadCosts;
+    window.generateInvoice = generateInvoice; window.generateReceipt = generateReceipt;
+    window.generateBalanceSheet = generateBalanceSheet; window.generateProfitLoss = generateProfitLoss;
+    window.generateStatement = generateStatement;
+    window.saveDocument = saveDocument; window.refreshDocList = refreshDocList;
+    window.viewDoc = viewDoc; window.deleteDoc = deleteDoc; window.clearAllDocs = clearAllDocs;
+    window.shareDocument = shareDocument; window.closeShareModal = closeShareModal;
+    window.sendSharedDocument = sendSharedDocument; window.shareSavedDoc = shareSavedDoc;
+    window.printDocument = printDocument;
+    window.renderUsers = renderUsers; window.updateSysInfo = updateSysInfo;
+    window.formatCurrency = formatCurrency; window.escapeHtml = escapeHtml;
+    window.changePassword = changePassword; window.forceLogoutUser = forceLogoutUser;
+    window.updateActiveSessions = updateActiveSessions; window.updateDocCreators = updateDocCreators;
+    window.updateDateTimeDisplay = updateDateTimeDisplay; window.getFormattedDateTime = getFormattedDateTime;
+    window.updateOnlineStatus = updateOnlineStatus; window.autoUpdateStock = autoUpdateStock;
+    window.updateDashboard = updateDashboard; window.updateCurrency = updateCurrency;
+    window.addReceiptItem = addReceiptItem; window.removeReceiptItem = removeReceiptItem;
+    window.clearReceiptItems = clearReceiptItems; window.updateReceiptPreview = updateReceiptPreview;
+    window.saveInventory = saveInventory;
+</script>
+</body>
+</html>
