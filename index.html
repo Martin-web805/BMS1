@@ -62,7 +62,7 @@
         .sync-status { display: inline-block; padding: 2px 12px; border-radius: 12px; font-size: 11px; margin-left: 8px; }
         .sync-status.synced { background: rgba(40,167,69,0.2); color: #28a745; }
         .sync-status.syncing { background: rgba(255,193,7,0.2); color: #856404; animation: pulse 1s infinite; }
-        .sync-status.offline { background: rgba(220,53,69,0.2); color: #dc3545; }
+        .sync-status.error { background: rgba(220,53,69,0.2); color: #dc3545; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         .currency-selector { background: rgba(255,255,255,0.08); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); color: white; font-size: 12px; }
         .currency-selector select { background: transparent; border: none; color: white; font-size: 12px; font-weight: 600; cursor: pointer; }
@@ -397,7 +397,7 @@
         <div class="header-center">
             <div class="datetime" id="headerDateTime">Loading...</div>
             <div class="online-status online" id="onlineStatus">🟢 Online</div>
-            <span id="cloudSyncStatus" class="sync-status offline">📡 Offline</span>
+            <span id="cloudSyncStatus" class="sync-status synced">☁️ Synced</span>
             <div class="currency-selector">
                 <label style="font-size:11px; opacity:0.7;">Currency:</label>
                 <select id="headerCurrency" onchange="updateCurrency()">
@@ -412,8 +412,7 @@
         </div>
         <div class="header-right">
             <span class="user-info">👤 <span id="currentUser">admin</span> · <span class="role" id="currentRole">Admin</span></span>
-            <button class="btn btn-white" onclick="syncToCloud()">☁️ Sync</button>
-            <button class="btn btn-white" onclick="saveData()">Save</button>
+            <button class="btn btn-white" onclick="syncToCloud()">☁️ Sync Now</button>
             <button class="btn btn-outline" onclick="logout()">Logout</button>
         </div>
     </div>
@@ -753,24 +752,6 @@
 <!-- ─── TOAST ─── -->
 <div id="toast" class="toast"></div>
 
-<!-- ─── EMAIL MODAL ─── -->
-<div class="modal-overlay" id="emailModal">
-    <div class="modal-content">
-        <button class="close-btn" onclick="closeEmailModal()">×</button>
-        <h3>Send Document</h3>
-        <p style="color:#6b7a8a; margin-bottom:14px;">To: <strong id="emailToDisplay">printercareuganda@gmail.com</strong></p>
-        <div style="margin-bottom:14px;">
-            <label style="font-weight:600; display:block; margin-bottom:6px; font-size:13px;">Document</label>
-            <input type="text" id="emailDocType" readonly style="width:100%; padding:10px; border:2px solid #e8ecf2; border-radius:8px; background:#f8f9fb; font-size:13px;">
-        </div>
-        <div style="margin-bottom:18px;">
-            <label style="font-weight:600; display:block; margin-bottom:6px; font-size:13px;">Additional Note</label>
-            <textarea id="emailNote" rows="3" placeholder="Add any additional notes..."></textarea>
-        </div>
-        <button class="btn btn-success" onclick="sendEmailConfirm()" style="width:100%; padding:14px;">Send Email</button>
-    </div>
-</div>
-
 <script>
 // ─── FIREBASE CONFIGURATION ────────────────────────────────────────────
 // REPLACE THIS WITH YOUR ACTUAL FIREBASE CONFIG FROM THE FIREBASE CONSOLE
@@ -802,6 +783,8 @@ let currentCurrency = 'UGX';
 let shareDocType = '';
 let _savedDocContent = null;
 let _savedDocName = '';
+let isSyncing = false;
+let pendingSync = false;
 
 // ─── UTILITY FUNCTIONS ──────────────────────────────────────────────────
 function getFormattedDateTime() {
@@ -847,32 +830,32 @@ function showToast(message, type = 'success') {
     toast.textContent = message;
     toast.className = 'toast ' + type + ' show';
     clearTimeout(toast._timeout);
-    toast._timeout = setTimeout(() => toast.classList.remove('show'), 3000);
+    toast._timeout = setTimeout(() => toast.classList.remove('show'), 4000);
 }
 
 // ─── FIREBASE INIT ──────────────────────────────────────────────────────
 function initFirebase() {
     try {
         if (typeof firebase === 'undefined') {
-            console.warn('Firebase SDK not loaded. Running offline.');
-            updateSyncStatus('offline', 'Offline mode');
+            console.error('Firebase SDK not loaded!');
+            showToast('Firebase SDK not loaded. Please check internet connection.', 'error');
             return false;
         }
         if (firebaseConfig.apiKey === 'YOUR_API_KEY') {
-            console.warn('Firebase not configured. Please set your Firebase config.');
-            updateSyncStatus('offline', 'Not configured');
+            console.error('Firebase not configured! Please set your Firebase config.');
+            showToast('⚠️ Firebase not configured. Please set your Firebase config in the code.', 'error');
             return false;
         }
         firebase.initializeApp(firebaseConfig);
         firebaseDb = firebase.database();
         firebaseInitialized = true;
         syncEnabled = true;
-        console.log('✅ Firebase initialized!');
+        console.log('✅ Firebase initialized successfully!');
         updateSyncStatus('synced', 'Cloud ready');
         return true;
     } catch (e) {
-        console.warn('Firebase init failed:', e.message);
-        updateSyncStatus('offline', 'Init failed');
+        console.error('Firebase init failed:', e.message);
+        showToast('❌ Firebase connection failed: ' + e.message, 'error');
         return false;
     }
 }
@@ -883,57 +866,86 @@ function updateSyncStatus(status, message) {
     const statusMap = {
         'synced': { text: '☁️ Synced', class: 'sync-status synced' },
         'syncing': { text: '🔄 Syncing...', class: 'sync-status syncing' },
-        'offline': { text: '📡 Offline', class: 'sync-status offline' },
-        'error': { text: '⚠️ Error', class: 'sync-status offline' }
+        'error': { text: '⚠️ Error', class: 'sync-status error' }
     };
-    const s = statusMap[status] || statusMap['offline'];
+    const s = statusMap[status] || statusMap['error'];
     el.textContent = s.text;
     el.className = s.class;
-    if (message && status !== 'syncing') showToast(message, status === 'error' ? 'error' : 'info');
+    if (message && status !== 'syncing') {
+        showToast(message, status === 'error' ? 'error' : 'success');
+    }
 }
 
 // ─── SYNC FUNCTIONS ──────────────────────────────────────────────────
 function syncToCloud() {
     if (!syncEnabled || !firebaseInitialized) {
-        showToast('Cloud sync not configured. Running offline.', 'error');
+        showToast('⚠️ Cloud sync not available. Please check Firebase configuration.', 'error');
         return;
     }
-    updateSyncStatus('syncing', 'Syncing...');
+    if (!currentUser) {
+        showToast('Please login first', 'error');
+        return;
+    }
+    if (isSyncing) {
+        pendingSync = true;
+        showToast('Sync already in progress...', 'info');
+        return;
+    }
+    
+    isSyncing = true;
+    pendingSync = false;
+    updateSyncStatus('syncing', 'Syncing to cloud...');
+    
     const data = prepareSyncData();
-    const userId = currentUser?.username || 'default';
+    const userId = currentUser.username;
+    
     firebaseDb.ref('business_data/' + userId).set(data)
         .then(() => {
-            updateSyncStatus('synced', '✅ Synced to cloud!');
-            showToast('Data synced to cloud!', 'success');
+            isSyncing = false;
+            updateSyncStatus('synced', '✅ Data synced to cloud successfully!');
+            if (pendingSync) {
+                pendingSync = false;
+                setTimeout(() => syncToCloud(), 1000);
+            }
         })
         .catch((error) => {
-            updateSyncStatus('error', '❌ Sync failed');
+            isSyncing = false;
+            updateSyncStatus('error', '❌ Sync failed: ' + error.message);
             showToast('Sync failed: ' + error.message, 'error');
+            console.error('Sync error:', error);
         });
 }
 
 function loadFromCloud() {
     if (!syncEnabled || !firebaseInitialized) {
-        showToast('Cloud sync not configured.', 'error');
+        showToast('⚠️ Cloud sync not available.', 'error');
         return;
     }
-    updateSyncStatus('syncing', 'Loading...');
-    const userId = currentUser?.username || 'default';
+    if (!currentUser) {
+        showToast('Please login first', 'error');
+        return;
+    }
+    
+    updateSyncStatus('syncing', 'Loading from cloud...');
+    const userId = currentUser.username;
+    
     firebaseDb.ref('business_data/' + userId).once('value')
         .then((snapshot) => {
             const data = snapshot.val();
             if (data) {
                 applyCloudData(data);
-                updateSyncStatus('synced', '✅ Loaded from cloud!');
-                showToast('Data loaded from cloud!', 'success');
+                updateSyncStatus('synced', '✅ Data loaded from cloud!');
+                showToast('Data loaded from cloud successfully!', 'success');
             } else {
-                updateSyncStatus('offline', 'No cloud data');
-                showToast('No cloud data found.', 'info');
+                // No data in cloud, push local data
+                updateSyncStatus('syncing', 'No cloud data found. Uploading local data...');
+                syncToCloud();
             }
         })
         .catch((error) => {
-            updateSyncStatus('error', '❌ Load failed');
+            updateSyncStatus('error', '❌ Load failed: ' + error.message);
             showToast('Load failed: ' + error.message, 'error');
+            console.error('Load error:', error);
         });
 }
 
@@ -987,7 +999,8 @@ function prepareSyncData() {
         clientEmail: document.getElementById('clientEmail')?.value || '',
         currency: currentCurrency,
         users: users,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        lastUpdated: Date.now()
     };
 }
 
@@ -1028,13 +1041,20 @@ function applyCloudData(data) {
         renderUsers();
     }
     updateAllDisplays();
+    showToast('Data loaded from cloud successfully!', 'success');
 }
 
 let autoSyncTimer = null;
 function scheduleAutoSync() {
-    if (!syncEnabled || !firebaseInitialized) return;
+    if (!syncEnabled || !firebaseInitialized || !currentUser) return;
     clearTimeout(autoSyncTimer);
-    autoSyncTimer = setTimeout(() => { syncToCloud(); }, 5000);
+    autoSyncTimer = setTimeout(() => {
+        if (!isSyncing) {
+            syncToCloud();
+        } else {
+            pendingSync = true;
+        }
+    }, 3000);
 }
 
 // ─── COMPANY CONFIG ──────────────────────────────────────────────────
@@ -1066,8 +1086,6 @@ function applyCompanyConfig() {
     if (headerEl) headerEl.innerHTML = `${companyConfig.name} <small id="headerCompanyPhone">📞 ${companyConfig.phone}</small>`;
     const resetEl = document.getElementById('resetEmailDisplay');
     if (resetEl) resetEl.textContent = companyConfig.email;
-    const emailEl = document.getElementById('emailToDisplay');
-    if (emailEl) emailEl.textContent = companyConfig.email;
     ['pl', 'inv', 'rec', 'bal', 'sta'].forEach(type => {
         const infoEl = document.getElementById(type + 'CompanyInfo');
         const footerEl = document.getElementById(type + 'Footer');
@@ -1176,8 +1194,11 @@ function login() {
         updateActiveSessions();
         updateDateTimeDisplay();
         updateOnlineStatus();
+        // Load cloud data after login
         setTimeout(() => {
-            if (syncEnabled && firebaseInitialized) loadFromCloud();
+            if (syncEnabled && firebaseInitialized) {
+                loadFromCloud();
+            }
         }, 1500);
     } else {
         document.getElementById('loginError').style.display = 'block';
@@ -1186,14 +1207,31 @@ function login() {
 }
 
 function logout() {
-    activeSessions = activeSessions.filter(s => s.username !== currentUser?.username);
-    localStorage.setItem('printercare_sessions', JSON.stringify(activeSessions));
-    currentUser = null;
-    document.getElementById('appContainer').style.display = 'none';
-    document.getElementById('loginScreen').classList.remove('hidden');
-    document.getElementById('loginPassword').value = '';
-    showToast('Logged out successfully', 'info');
-    updateActiveSessions();
+    // Sync before logout
+    if (syncEnabled && firebaseInitialized && currentUser) {
+        showToast('Syncing data before logout...', 'info');
+        syncToCloud();
+        // Wait a bit for sync to complete
+        setTimeout(() => {
+            activeSessions = activeSessions.filter(s => s.username !== currentUser?.username);
+            localStorage.setItem('printercare_sessions', JSON.stringify(activeSessions));
+            currentUser = null;
+            document.getElementById('appContainer').style.display = 'none';
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('loginPassword').value = '';
+            showToast('Logged out successfully', 'info');
+            updateActiveSessions();
+        }, 2000);
+    } else {
+        activeSessions = activeSessions.filter(s => s.username !== currentUser?.username);
+        localStorage.setItem('printercare_sessions', JSON.stringify(activeSessions));
+        currentUser = null;
+        document.getElementById('appContainer').style.display = 'none';
+        document.getElementById('loginScreen').classList.remove('hidden');
+        document.getElementById('loginPassword').value = '';
+        showToast('Logged out successfully', 'info');
+        updateActiveSessions();
+    }
 }
 
 function addUser() {
@@ -1487,7 +1525,10 @@ function renderTable() {
     updateTotals();
     const rowCount = document.getElementById('rowCount');
     if (rowCount) rowCount.textContent = `${items.length} items`;
-    autoSave();
+    // Auto-save to cloud
+    if (syncEnabled && firebaseInitialized && currentUser) {
+        scheduleAutoSync();
+    }
     updateDashboard();
 }
 
@@ -1506,12 +1547,15 @@ function updateField(index, field, value) {
             if (amountSpan) amountSpan.textContent = formatCurrency(amount);
         }
         updateTotals();
-        autoSave();
         updateDashboard();
         document.querySelectorAll('.sale-item-select').forEach(sel => {
             const currentVal = sel.value;
             sel.innerHTML = '<option value="">Select from stock...</option>' + items.map(i => `<option value="${escapeHtml(i.commodity)}" ${i.commodity === currentVal ? 'selected' : ''}>${escapeHtml(i.commodity)}</option>`).join('');
         });
+        // Auto-save to cloud
+        if (syncEnabled && firebaseInitialized && currentUser) {
+            scheduleAutoSync();
+        }
     }
 }
 
@@ -1674,8 +1718,10 @@ function updateSalesSummary() {
             total: parseFloat(entry.querySelector('.sale-total').value) || 0
         });
     });
-    autoSave();
     updateDashboard();
+    if (syncEnabled && firebaseInitialized && currentUser) {
+        scheduleAutoSync();
+    }
 }
 
 function renderSales() {
@@ -1783,7 +1829,9 @@ function updateCostSummary() {
             profit: parseFloat(entry.querySelector('.cost-profit').value) || 0
         });
     });
-    autoSave();
+    if (syncEnabled && firebaseInitialized && currentUser) {
+        scheduleAutoSync();
+    }
 }
 
 function loadCosts() {
@@ -1908,6 +1956,9 @@ function updateReceiptPreview() {
             total: parseFloat(row.querySelector('.receipt-item-total').value) || 0
         });
     });
+    if (syncEnabled && firebaseInitialized && currentUser) {
+        scheduleAutoSync();
+    }
 }
 
 function generateReceipt() {
@@ -2230,7 +2281,7 @@ function saveDocument(type) {
     localStorage.setItem('printercare_documents', JSON.stringify(documents));
     refreshDocList();
     showToast(`${doc.name} saved to database!`, 'success');
-    autoSave();
+    scheduleAutoSync();
 }
 
 function refreshDocList() {
@@ -2306,7 +2357,7 @@ function saveInventory() {
     localStorage.setItem('printercare_documents', JSON.stringify(documents));
     refreshDocList();
     showToast('Inventory saved to database!', 'success');
-    autoSave();
+    scheduleAutoSync();
 }
 
 // ─── SHARE FUNCTIONS ──────────────────────────────────────────────
@@ -2443,69 +2494,6 @@ function printDocument(tabId) {
     setTimeout(() => { printWin.print(); }, 500);
 }
 
-// ─── AUTO SAVE ──────────────────────────────────────────────────
-function autoSave() {
-    try {
-        const salesData = [];
-        document.querySelectorAll('.sales-entry').forEach(entry => {
-            const select = entry.querySelector('.sale-item-select');
-            const manualInput = entry.querySelector('.sale-item');
-            let itemName = '';
-            if (select && select.value) itemName = select.value;
-            else if (manualInput && manualInput.value) itemName = manualInput.value;
-            salesData.push({
-                item: itemName,
-                qty: parseFloat(entry.querySelector('.sale-qty').value) || 0,
-                price: parseFloat(entry.querySelector('.sale-price').value) || 0,
-                total: parseFloat(entry.querySelector('.sale-total').value) || 0
-            });
-        });
-        const costData = [];
-        document.querySelectorAll('.cost-entry').forEach(entry => {
-            costData.push({
-                item: entry.querySelector('.cost-item').value,
-                buy: parseFloat(entry.querySelector('.cost-buy').value) || 0,
-                sell: parseFloat(entry.querySelector('.cost-sell').value) || 0,
-                qty: parseFloat(entry.querySelector('.cost-qty').value) || 0,
-                profit: parseFloat(entry.querySelector('.cost-profit').value) || 0
-            });
-        });
-        const receiptData = [];
-        document.querySelectorAll('.receipt-item-row').forEach(row => {
-            receiptData.push({
-                name: row.querySelector('.receipt-item-name').value,
-                qty: parseFloat(row.querySelector('.receipt-item-qty').value) || 0,
-                price: parseFloat(row.querySelector('.receipt-item-price').value) || 0,
-                total: parseFloat(row.querySelector('.receipt-item-total').value) || 0
-            });
-        });
-        const data = {
-            items: items,
-            shipping: document.getElementById('shippingInput')?.value || '30000',
-            sales: salesData,
-            documents: documents,
-            costs: costData,
-            receiptItems: receiptData,
-            receiptNumber: document.getElementById('receiptNumber')?.value || 'RCT-001',
-            receiptClient: document.getElementById('receiptClient')?.value || 'Walk-in Customer',
-            paymentMethod: document.getElementById('paymentMethod')?.value || 'Cash',
-            invoiceNumber: document.getElementById('invoiceNumber')?.value || 'INV-001',
-            clientName: document.getElementById('clientName')?.value || '',
-            clientEmail: document.getElementById('clientEmail')?.value || '',
-            currency: currentCurrency,
-            timestamp: new Date().toISOString()
-        };
-        localStorage.setItem('printercare_data', JSON.stringify(data));
-        scheduleAutoSync();
-    } catch(e) { /* ignore */ }
-}
-
-function saveData() {
-    autoSave();
-    showToast('Data saved to browser!', 'success');
-    if (syncEnabled && firebaseInitialized) syncToCloud();
-}
-
 // ─── UTILITY FUNCTIONS ──────────────────────────────────────────
 function updateDateTimeDisplay() {
     const dt = getFormattedDateTime();
@@ -2559,7 +2547,7 @@ function updateOnlineStatus() {
         } else {
             statusEl.textContent = '🔴 Offline';
             statusEl.className = 'online-status offline';
-            updateSyncStatus('offline', 'Offline mode');
+            showToast('⚠️ You are offline. Please check your internet connection.', 'error');
         }
     }
 }
@@ -2572,6 +2560,7 @@ function autoUpdateStock() {
     const lastUpdate = document.getElementById('lastUpdateTime');
     if (lastUpdate) lastUpdate.textContent = `Last updated: ${dt.display}`;
     showToast('✅ Stock data updated successfully!', 'success');
+    scheduleAutoSync();
 }
 
 function updateSysInfo() {
@@ -2615,32 +2604,24 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     });
 });
 
-// ─── SEND EMAIL ──────────────────────────────────────────────────
-function sendEmail(type) {
-    // Legacy function - kept for compatibility
-    showToast('Use the Share button to send documents', 'info');
-}
-
-function closeEmailModal() {
-    const modal = document.getElementById('emailModal');
-    if (modal) modal.classList.remove('active');
-}
-
-function sendEmailConfirm() {
-    // Legacy function - kept for compatibility
-    showToast('Use the Share button to send documents', 'info');
-    closeEmailModal();
-}
-
 // ─── INIT APP ──────────────────────────────────────────────────
 function initApp() {
+    // Initialize Firebase
     const firebaseReady = initFirebase();
     if (firebaseReady) {
         syncEnabled = true;
-        setTimeout(() => { loadFromCloud(); }, 1500);
+        // Load cloud data after login
+        setTimeout(() => {
+            if (currentUser) {
+                loadFromCloud();
+            }
+        }, 1500);
     } else {
-        updateSyncStatus('offline', 'Running offline');
+        updateSyncStatus('error', 'Cloud not available');
+        showToast('⚠️ Running in offline mode. Cloud sync not available.', 'error');
     }
+    
+    // Load local data as backup
     const docRaw = localStorage.getItem('printercare_documents');
     if (docRaw) { try { documents = JSON.parse(docRaw); } catch(e) { documents = []; } }
     const raw = localStorage.getItem('printercare_data');
@@ -2700,9 +2681,6 @@ function initApp() {
         generateStatement();
     }, 200);
     showToast(`${companyConfig.name} ready!`, 'success');
-    setTimeout(() => {
-        if (syncEnabled && firebaseInitialized) syncToCloud();
-    }, 30000);
 }
 
 // ─── KEYBOARD SHORTCUTS ──────────────────────────────────────────
@@ -2715,7 +2693,7 @@ window.addEventListener('online', () => {
     updateOnlineStatus();
     showToast('🟢 Back online! Syncing...', 'success');
     setTimeout(() => {
-        if (syncEnabled && firebaseInitialized) {
+        if (syncEnabled && firebaseInitialized && currentUser) {
             loadFromCloud();
             syncToCloud();
         }
@@ -2724,7 +2702,7 @@ window.addEventListener('online', () => {
 });
 window.addEventListener('offline', () => {
     updateOnlineStatus();
-    showToast('🔴 Offline. Changes saved locally.', 'error');
+    showToast('🔴 You are offline. Please check your internet connection.', 'error');
 });
 
 // ─── INIT ──────────────────────────────────────────────────────
@@ -2732,7 +2710,6 @@ initAuth();
 loadCompanyConfig();
 
 // ─── EXPOSE GLOBAL FUNCTIONS ──────────────────────────────────
-// Auth
 window.login = login;
 window.logout = logout;
 window.addUser = addUser;
@@ -2750,13 +2727,9 @@ window.changePasswordLogin = changePasswordLogin;
 window.forceLogoutUser = forceLogoutUser;
 window.renderUsers = renderUsers;
 window.updateActiveSessions = updateActiveSessions;
-
-// Company
 window.openEditCompany = openEditCompany;
 window.closeEditCompanyModal = closeEditCompanyModal;
 window.saveCompanyDetails = saveCompanyDetails;
-
-// Inventory
 window.addRow = addRow;
 window.deleteRow = deleteRow;
 window.clearAll = clearAll;
@@ -2765,28 +2738,20 @@ window.updateField = updateField;
 window.renderTable = renderTable;
 window.updateTotals = updateTotals;
 window.saveInventory = saveInventory;
-
-// Sales
 window.addSale = addSale;
 window.removeSale = removeSale;
 window.updateSalesSummary = updateSalesSummary;
 window.clearSales = clearSales;
 window.renderSales = renderSales;
-
-// Costs
 window.addCostRow = addCostRow;
 window.removeCostRow = removeCostRow;
 window.updateCostSummary = updateCostSummary;
 window.clearCosts = clearCosts;
 window.loadCosts = loadCosts;
-
-// Receipt
 window.addReceiptItem = addReceiptItem;
 window.removeReceiptItem = removeReceiptItem;
 window.clearReceiptItems = clearReceiptItems;
 window.updateReceiptPreview = updateReceiptPreview;
-
-// Documents
 window.generateInvoice = generateInvoice;
 window.generateReceipt = generateReceipt;
 window.generateBalanceSheet = generateBalanceSheet;
@@ -2802,10 +2767,6 @@ window.closeShareModal = closeShareModal;
 window.sendSharedDocument = sendSharedDocument;
 window.shareSavedDoc = shareSavedDoc;
 window.printDocument = printDocument;
-
-// System
-window.saveData = saveData;
-window.autoSave = autoSave;
 window.syncToCloud = syncToCloud;
 window.loadFromCloud = loadFromCloud;
 window.updateCurrency = updateCurrency;
@@ -2821,13 +2782,8 @@ window.formatCurrency = formatCurrency;
 window.escapeHtml = escapeHtml;
 window.showToast = showToast;
 
-// Email (legacy)
-window.sendEmail = sendEmail;
-window.closeEmailModal = closeEmailModal;
-window.sendEmailConfirm = sendEmailConfirm;
-
 console.log('✅ PrinterCare Business Management System loaded!');
-console.log(`📡 Cloud sync: ${syncEnabled ? 'Enabled' : 'Disabled (offline mode)'}`);
+console.log(`📡 Cloud sync: ${syncEnabled ? 'Enabled' : 'Disabled'}`);
 console.log(`👤 Current user: ${currentUser?.username || 'Not logged in'}`);
 </script>
 </body>
